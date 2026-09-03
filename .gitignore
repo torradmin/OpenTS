@@ -12,6 +12,8 @@
 *.map
 *.exp
 
+build*/*
+
 # MSVC intermediate files
 *.aps
 *.pdb
