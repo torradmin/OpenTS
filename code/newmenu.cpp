@@ -12,8 +12,10 @@
 #include "newmenu.h"
 
 #include "_pk.h"
+#include "_rules.h"
 #include "addon.h"
 #include "ccfile.h"
+#include "ccini.h"
 #include "grphmenu.h"
 #include "init.h"
 #include "loaddlg.h"
@@ -108,16 +110,28 @@ __forceinline int NewMenuClass::Game_Select_Loop(NewMenuClass * menu)
 				switch (item) {
 					case GMENU_TIBSUN:
 						menu->GameMode = 0;
-						if (CCFileClass("TS_Title.VQA").Is_Available()) {
-							Play_Movie("TS_Title.VQA", THEME_NONE, false, true, false);
+
+						if (ConfigINI.Is_Present("Intro", "PlayIntro")) {
+							if (ConfigINI.Get_Bool("Intro", "PlayIntro", true) == true) {
+								if (CCFileClass("TS_Title.VQA").Is_Available()) {
+									Play_Movie("TS_Title.VQA", THEME_NONE, false, true, false);
+								}
+							}
 						}
+
 						continue;
 
 					case GMENU_FIRESTORM:
 						menu->GameMode = 1;
-						if (CCFileClass("FS_Title.VQA").Is_Available()) {
-							Play_Movie("FS_Title.VQA", THEME_NONE, false, true, false);
+
+						if (ConfigINI.Is_Present("Intro", "PlayIntro")) {
+							if (ConfigINI.Get_Bool("Intro", "PlayIntro", true) == true) {
+								if (CCFileClass("FS_Title.VQA").Is_Available()) {
+									Play_Movie("FS_Title.VQA", THEME_NONE, false, true, false);
+								}
+							}
 						}
+
 						continue;
 
 					case GMENU_BACK:
@@ -224,10 +238,11 @@ int NewMenuClass::Display_Menu(char const * section, DynamicVectorClass<int> & o
 
 /// <summary>
 /// Handles the choice between Tiberian Sun and Firestorm.
-/// This routine will display the game select page and put the addon system into the state
-/// that matches the player's choice. Firestorm needs its disc, so the page is shown again
-/// if the player cannot supply one. The scenario descriptions are reloaded before
-/// returning, since they differ between the two games.
+/// If [Options] Addon= is present in SUN.INI, that value is used and the game select page
+/// is skipped. Otherwise this routine will display the page and put the addon system into
+/// the state that matches the player's choice. Firestorm needs its disc, so the page is
+/// shown again if the player cannot supply one. The scenario descriptions are reloaded
+/// before returning, since they differ between the two games.
 /// </summary>
 /// <returns>Returns with the game the player selected.</returns>
 int NewMenuClass::Select_Game_Type(void)
@@ -235,6 +250,21 @@ int NewMenuClass::Select_Game_Type(void)
 	int result;
 
 	Disable_Addon(ADDON_ANY);
+
+	if (ConfigINI.Is_Present("Options", "Addon")) {
+		if (ConfigINI.Get_Int("Options", "Addon", ADDON_BASE_GAME) == ADDON_FIRESTORM
+			&& Addon_Installed(ADDON_FIRESTORM)) {
+			Enable_Addon(ADDON_FIRESTORM);
+			Set_Required_Addon(ADDON_FIRESTORM);
+			result = GMENU_FIRESTORM;
+		} else {
+			Set_Required_Addon(ADDON_BASE_GAME);
+			result = GMENU_TIBSUN;
+		}
+
+		Session.Read_Scenario_Descriptions();
+		return(result);
+	}
 
 	bool retry = true;
 	while (retry) {

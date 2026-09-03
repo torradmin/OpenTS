@@ -11,7 +11,9 @@
 
 #include "addon.h"
 
+#include "_rules.h"
 #include "ccfile.h"
+#include "ccini.h"
 #include "data.h"
 #include "init.h"
 #include "language/language.h"
@@ -47,9 +49,10 @@ AddonType operator--(AddonType & val)
 
 /// <summary>
 /// Asks the player which game they wish to play.
-/// This routine puts up the game type dialog whenever an expansion has been detected, and
-/// enables whichever addon the player settles on. With nothing but the base game present
-/// there is no choice to make, so the dialog never appears.
+/// If [Options] Addon= is present in SUN.INI, that value is used and the dialog is skipped.
+/// Otherwise this routine puts up the game type dialog whenever an expansion has been
+/// detected, and enables whichever addon the player settles on. With nothing but the base
+/// game present there is no choice to make, so the dialog never appears.
 /// </summary>
 /// <param name="type">The addon that the player chose to play.</param>
 /// <returns>bool; Should the game carry on? Returns false if the player backed out.</returns>
@@ -58,6 +61,17 @@ bool Select_Game_Type_Dialog(AddonType &type)
 	int retval;
 
 	type = ADDON_BASE_GAME;
+
+	if (ConfigINI.Is_Present("Options", "Addon")) {
+		if (ConfigINI.Get_Int("Options", "Addon", ADDON_BASE_GAME) == ADDON_FIRESTORM
+			&& Addon_Installed(ADDON_FIRESTORM)) {
+			Enable_Addon(ADDON_FIRESTORM);
+			type = ADDON_FIRESTORM;
+		}
+
+		Set_Required_Addon(type);
+		return(true);
+	}
 
 	if (Addon_Installed(ADDON_ANY)) {
 		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SELECT_GAME_TYPE, Select_Game_Type_Dialog_Proc);
