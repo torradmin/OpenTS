@@ -23,3 +23,13 @@ its report too. No hook blocks. Edit results are context for the agent, and
 the end-of-turn scan is a message to the user. Codex uses the same script
 through `.codex/hooks.json` with the per-edit subset; the `AGENTS.md` files
 remain the only source of the rules.
+
+## Visual Studio debug context
+
+When the user has an OpenTS debug session paused in Visual Studio and wants
+help with a crash or runtime value, use the `vs-debug-context` skill
+(`.claude/skills/vs-debug-context/SKILL.md`) rather than asking them to paste
+locals or a call stack by hand. It runs
+`.claude/tools/vs-debug-context.ps1`, which reads live debugger state — call
+stack, locals, breakpoints, Debug output — from the running `devenv.exe`
+instance over `EnvDTE` COM automation.
