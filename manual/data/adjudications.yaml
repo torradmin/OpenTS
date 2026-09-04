@@ -362,6 +362,14 @@ Type:
   "SuperWeaponTypeClass::buffer": {verdict: distinct}
   "SessionClass::None": {verdict: distinct}
 
+UIScale:
+  "OptionsClass::UIScale":
+    verdict: distinct
+    absorbs: ["Startup::Options"]
+    note: >-
+      also read early in Startup::WinMain, before the drawing surfaces exist,
+      so the sidebar surface is sized correctly the first time
+
 Wall:
   "BuildingTypeClass::IsWall": {verdict: distinct}
   "OverlayTypeClass::IsWall": {verdict: distinct}
