@@ -10524,6 +10524,24 @@ IgnoreGlobalAITriggers:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+IgnoreSaveVersion:
+  key: IgnoreSaveVersion
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: SaveVersionInfo
+      member: null
+      source: code/saveload.cpp
+      guard: null
+    level: SaveVersionInfo
 IgnoresFirestorm:
   key: IgnoresFirestorm
   scopes:
