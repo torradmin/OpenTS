@@ -6833,6 +6833,13 @@ int OwnerDraw::Default_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPA
 			SetFocus(window);
 			return(0);
 
+		case WM_ACTIVATEAPP:
+			// Alt-tab back leaves keyboard focus off the dialog, so IsDialogMessage() ignores Escape until a control is clicked.
+			if (wparam) {
+				SetFocus(window);
+			}
+			return(0);
+
 		case WM_CTLCOLORMSGBOX:
 		case WM_CTLCOLOREDIT:
 		case WM_CTLCOLORLISTBOX:
@@ -6864,6 +6871,20 @@ bool OwnerDraw::Dialog_Message_Handler(void)
 	static bool inmainloop = false;
 
 	Windows_Message_Handler();
+
+	// Alt-tab back can leave focus outside the dialog, so IsDialogMessage() ignores Escape until a control is clicked.
+	if (g_TopWindow && GameInFocus) {
+		bool owned = false;
+		for (HWND focus = GetFocus(); focus != NULL; focus = GetParent(focus)) {
+			if (focus == g_TopWindow) {
+				owned = true;
+				break;
+			}
+		}
+		if (!owned) {
+			SetFocus(g_TopWindow);
+		}
+	}
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.NetOpen && !Session.Suspended) {
 		if (!inmainloop) {
