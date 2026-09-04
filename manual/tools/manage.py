@@ -17,6 +17,13 @@ import contributor
 from extraction_history import historical_corrections
 
 
+# Subprocess output (Astro, Node test runner) prints Unicode status glyphs
+# that a Windows console's legacy codepage cannot encode.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 ROOT = Path(__file__).resolve().parents[2]
 MANUAL = ROOT / "manual"
 DATA = MANUAL / "data"
