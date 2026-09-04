@@ -100,6 +100,7 @@
 #include "savestream.h"
 #include "savever.h"
 #include "scenario.h"
+#include "screenlayout.h"
 #include "script.h"
 #include "session.h"
 #include "side.h"
@@ -659,15 +660,11 @@ static bool Get_All(IStream *stream, bool save_net)
 		return(false);
 	}
 
-	Rect temp = VisibleRect;
-	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = 16;
-	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= 16;
+	ScreenLayout const layout = Compute_Screen_Layout(VisibleRect);
 
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
+	Allocate_Surfaces(layout.Hidden, layout.Composite, layout.Tile, layout.Sidebar);
 
-	Map.Set_View_Dimensions(temp);
+	Map.Set_View_Dimensions(layout.Tactical);
 
 	Environment.Load(stream);
 

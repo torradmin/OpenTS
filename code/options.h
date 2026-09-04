@@ -191,6 +191,12 @@ class OptionsClass {
 		 */
 		int CursorScale;
 
+		/*
+		 * This is how many times larger than its artwork the in-game interface is drawn.
+		 * Zero follows the height of the frame.
+		 */
+		int UIScale;
+
 		float SoundVolume;				// Volume for sound effects.
 		float VoiceVolume;				/// Volume for voices.
 		float ScoreVolume;				// Volume for scores.

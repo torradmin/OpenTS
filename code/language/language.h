@@ -1136,6 +1136,8 @@
 #define IDC_DETAIL_LEVEL_LABEL          1651
 #define IDC_STRETCH_MOVIES              1652
 #define IDC_RESUME_MISSION              1653
+#define IDC_DISPLAY_UISCALE             1654
+#define IDC_DISPLAY_UISCALE_VALUE       1655
 #define IDD_OPT_CTRL_MP                 3002
 #define IDD_OPT_CTRL_GAME_MP            3003
 #define IDD_SELECT_GAME_TYPE            3004

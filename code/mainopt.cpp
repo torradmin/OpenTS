@@ -29,10 +29,12 @@
 #include "mixfile.h"
 #include "newmenu.h"
 #include "ownrdraw.h"
+#include "screenlayout.h"
 #include "sidebar.h"
 #include "sounddlg.h"
 #include "stimer.h"
 #include "surface.h"
+#include "winfix.h"
 #include "wwmouse.h"
 
 #include "color.hh"
@@ -155,11 +157,18 @@ void Show_Display_Options_Dialog(void)
 		if (in_rc != 1) {
 			break;
 		}
-		if (TempOptions.ScreenWidth == Options.ScreenWidth && TempOptions.ScreenHeight == Options.ScreenHeight) {
+		if (TempOptions.ScreenWidth == Options.ScreenWidth && TempOptions.ScreenHeight == Options.ScreenHeight
+				&& TempOptions.UIScale == Options.UIScale) {
 			break;
 		}
 
+		// Change_Display_Mode reads the UI scale from Options, so it must be staged there
+		// before the trial and put back if the trial fails.
+		int const previous_scale = Options.UIScale;
+		Options.UIScale = TempOptions.UIScale;
+
 		if (!Test_Display_Mode_Dialog(TempOptions.ScreenWidth, TempOptions.ScreenHeight)) {
+			Options.UIScale = previous_scale;
 			continue;
 		}
 		Options.ScreenWidth = TempOptions.ScreenWidth;
@@ -301,20 +310,16 @@ bool Change_Display_Mode(int width, int height)
 		SetWindowPos(MainWindow, NULL, x, y, newwidth, newheight, SWP_NOZORDER);
 	}
 
-	Rect temp = VisibleRect;
-	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = 16;
-	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= 16;
+	ScreenLayout const layout = Compute_Screen_Layout(VisibleRect);
 
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
+	Allocate_Surfaces(layout.Hidden, layout.Composite, layout.Tile, layout.Sidebar);
 	LogicalSurface = HiddenSurface;
 
 	if (MouseCursor != NULL) {
 		((WWMouseClass*)MouseCursor)->Calc_Confining_Rect();
 	}
 
-	Map.Set_View_Dimensions(temp);
+	Map.Set_View_Dimensions(layout.Tactical);
 
 	Map.Init_IO();
 	Map.Activate(
@@ -422,13 +427,35 @@ BOOL CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wp
 
 
 /// <summary>
+/// Shows the interface magnification a UI scale slider position stands for.
+/// </summary>
+/// <param name="window">The dialog the slider and its label belong to.</param>
+/// <param name="scale">The slider position, zero for automatic.</param>
+static void Set_UIScale_Label(HWND window, int scale)
+{
+	HWND label = GetDlgItem(window, IDC_DISPLAY_UISCALE_VALUE);
+	if (label == NULL) {
+		return;
+	}
+
+	char buffer[16];
+	if (scale <= 0) {
+		sprintf(buffer, "Auto");
+	} else {
+		sprintf(buffer, "%dx", scale);
+	}
+	SetWindowText(label, buffer);
+}
+
+
+/// <summary>
 /// Handles the display options dialog messages.
 /// This routine fills the resolution list with the display modes the hardware reports,
-/// remembers which one the player picked, and tracks the movie stretching preference. The
-/// chosen resolution is staged in the temporary options so that it can be tested before
-/// being made permanent.
+/// remembers which one the player picked, and tracks the movie stretching and UI scale
+/// preferences. The chosen resolution and UI scale are staged in the temporary options so
+/// that they can be tested before being made permanent.
 /// </summary>
-static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message, WPARAM wparam)
+static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	enum {
 		MIN_WIDTH = 640,
@@ -471,6 +498,10 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 					if (button) {
 						Options.StretchMovies = Button_GetCheck(button) == BST_CHECKED;
 					}
+					HWND scale = GetDlgItem(window, IDC_DISPLAY_UISCALE);
+					if (scale) {
+						TempOptions.UIScale = Slider_GetPos(scale);
+					}
 				}
 				break;
 			}
@@ -479,6 +510,14 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 			// Escape leaves with the same settings a click on OK would have applied.
 			*result = IDOK;
 			break;
+
+		case WM_HSCROLL: {
+			HWND scale = GetDlgItem(window, IDC_DISPLAY_UISCALE);
+			if (scale != NULL && (HWND)lparam == scale) {
+				Set_UIScale_Label(window, Slider_GetPos(scale));
+			}
+		}
+		break;
 
 		case WM_INITDIALOG: {
 			HWND list = GetDlgItem(window, IDC_DISPLAY_RESLIST);
@@ -511,6 +550,13 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 			if (button) {
 				Button_SetCheck(button, Options.StretchMovies != false);
 			}
+
+			HWND scale = GetDlgItem(window, IDC_DISPLAY_UISCALE);
+			if (scale) {
+				Slider_SetRange(scale, 0, UI_SCALE_MAX);
+				Slider_SetPos(scale, TempOptions.UIScale);
+				Set_UIScale_Label(window, TempOptions.UIScale);
+			}
 		}
 		break;
 
@@ -528,7 +574,7 @@ BOOL CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 {
 	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
-		return(Display_Options_Dialog_Body(window, message, wparam));
+		return(Display_Options_Dialog_Body(window, message, wparam, lparam));
 	}
 	return(rc);
 }
