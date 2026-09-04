@@ -1234,6 +1234,24 @@ ActsLike:
       source: code/house.cpp
       guard: null
     level: HouseClass
+Addon:
+  key: Addon
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AddonType
+      member: null
+      source: code/addon.cpp
+      guard: null
+    level: AddonType
 Adjacent:
   key: Adjacent
   scopes:
