@@ -224,6 +224,12 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 					}
 					break;
 
+				case IDCANCEL:
+					if (!code) {
+						*retval = IDOK;
+					}
+					break;
+
 				case IDC_ABORT_MISSION:
 					if (!code) {
 						if (Session.Type == GAME_INTERNET) {
