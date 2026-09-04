@@ -154,3 +154,16 @@ site_exclusions:
     classification: duplicate
     canonical_key: Addon
     reason: The main-menu game-type picker re-reads the same Addon setting already extracted from Select_Game_Type_Dialog, the multiplayer entry's own picker.
+
+  - path: code/init.cpp
+    function: Init_Game
+    keys: [PlayIntro]
+    classification: duplicate
+    canonical_key: PlayIntro
+    reason: This later check re-reads the same PlayIntro setting already extracted from Startup::WinMain to decide whether to play the startup movies.
+  - path: code/newmenu.cpp
+    function: NewMenuClass::Game_Select_Loop
+    keys: [PlayIntro]
+    classification: duplicate
+    canonical_key: PlayIntro
+    reason: The per-title movie gate re-reads the same PlayIntro setting already extracted from Startup::WinMain.
