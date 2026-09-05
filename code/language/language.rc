@@ -901,10 +901,10 @@ BEGIN
                     46,115,14
     CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
                     47,63,115,14
-    CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
-                    BS_OWNERDRAW,47,80,115,14
-    CONTROL         "Quit Game",IDC_QUIT_GAME,"Button",BS_OWNERDRAW,47,97,
+    CONTROL         "Quit Game",IDC_QUIT_GAME,"Button",BS_OWNERDRAW,47,80,
                     115,14
+    CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
+                    BS_OWNERDRAW,47,97,115,14
 END
 
 IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 75
