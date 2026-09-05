@@ -288,6 +288,9 @@ bool PlayerRestarts;
 */
 bool PlayerAborts;
 
+// Select_Game checks this before showing the main menu again.
+bool QuitToDesktop;
+
 
 /***************************************************************************
 **	This is a running accumulation of the number of ticks that were unused.

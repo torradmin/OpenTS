@@ -27,5 +27,6 @@ enum SpecialDialogType {
 	SDLG_SOUND,
 	SDLG_SPECIAL,
 	SDLG_QUICKLOAD,
-	SDLG_LOAD,
+    SDLG_LOAD,
+	SDLG_DISPLAY,
 };

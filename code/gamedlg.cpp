@@ -353,6 +353,13 @@ void Game_Controls_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, L
 			}
 			break;
 
+		case IDC_OPT_DISPLAY_BTN:
+			if (lparam == 0 && GameActive == true) {
+				SpecialDialog = SDLG_DISPLAY;
+				*retval = IDOK;
+			}
+			break;
+
 		case IDOK:
 			if (lparam == 0) {
 				*retval = IDOK;

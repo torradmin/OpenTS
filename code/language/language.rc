@@ -71,7 +71,7 @@ BEGIN
             VALUE "FileDescription", "Tiberian Sun Language Definitions\0"
             VALUE "FileVersion", OPENTS_VERSION "\0"
             VALUE "InternalName", "English Resources\0"
-            VALUE "LegalCopyright", "Copyright © 2000 Westwood Studios, © 2026 OpenTS contributors\0"
+            VALUE "LegalCopyright", "Copyright Â© 2000 Westwood Studios, Â© 2026 OpenTS contributors\0"
             VALUE "LegalTrademarks", "Command & Conquer is a trademark of Westwood Studios\0"
             VALUE "OriginalFilename", "Language.dll\0"
             VALUE "PrivateBuild", OPENTS_BUILD_DESCRIPTION "\0"
@@ -131,6 +131,16 @@ BEGIN
                     14
     CONTROL         "Restart",IDC_RESTART_MISSION,"Button",BS_OWNERDRAW,98,
                     37,60,14
+END
+
+IDD_QUIT_GAME_CONFIRM DIALOG DISCARDABLE  0, 0, 256, 63
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Quit Game",IDOK,"Button",BS_OWNERDRAW,22,37,100,14
+    CONTROL         "Cancel",IDCANCEL,"Button",BS_OWNERDRAW,134,37,100,14
+    CTEXT           "Quit the game and return to desktop?",-1,22,12,212,19,
+                    SS_CENTERIMAGE | NOT WS_GROUP
 END
 
 IDD_OPT_CONFIRM_MODE DIALOG DISCARDABLE  0, 0, 239, 70
@@ -221,15 +231,17 @@ BEGIN
                     12
 END
 
-IDD_OPT_CTRL_GAME_MP DIALOG DISCARDABLE  0, 0, 292, 157
+IDD_OPT_CTRL_GAME_MP DIALOG DISCARDABLE  0, 0, 292, 177
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "Options Menu",1,"Button",BS_OWNERDRAW,196,131,77,14
+    CONTROL         "Display",IDC_OPT_DISPLAY_BTN,"Button",BS_OWNERDRAW,
+                    196,131,77,14
     CONTROL         "Keyboard",IDC_OPT_KEYBOARD_BTN,"Button",BS_OWNERDRAW,
                     109,131,77,14
     CONTROL         "Sound",IDC_OPT_SOUND_BTN,"Button",BS_OWNERDRAW,22,131,
                     77,14
+    CONTROL         "Options Menu",1,"Button",BS_OWNERDRAW,109,151,77,14
     CONTROL         "Slider1",IDC_GAME_SPEED_SLIDER,"msctls_trackbar32",
                     TBS_BOTH | TBS_NOTICKS,90,12,128,15
     RTEXT           "Game Speed:",-1,22,12,63,15,SS_CENTERIMAGE | NOT 
@@ -846,7 +858,7 @@ BEGIN
     LTEXT           "Your Name:",-1,24,9,62,10
 END
 
-IDD_OPT_CTRL_SP DIALOG DISCARDABLE  0, 0, 209, 140
+IDD_OPT_CTRL_SP DIALOG DISCARDABLE  0, 0, 209, 157
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
@@ -864,6 +876,8 @@ BEGIN
                     47,12,115,14
     CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
                     47,97,115,14
+    CONTROL         "Quit Game",IDC_QUIT_GAME,"Button",BS_OWNERDRAW,47,131,
+                    115,14
 END
 
 IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 75
@@ -1563,15 +1577,17 @@ BEGIN
                     50,14
 END
 
-IDD_OPT_CTRL_GAME_WOL DIALOG DISCARDABLE  0, 0, 294, 126
+IDD_OPT_CTRL_GAME_WOL DIALOG DISCARDABLE  0, 0, 294, 146
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "Options Menu",1,"Button",BS_OWNERDRAW,196,100,77,14
+    CONTROL         "Display",IDC_OPT_DISPLAY_BTN,"Button",BS_OWNERDRAW,
+                    196,100,77,14
     CONTROL         "Keyboard",IDC_OPT_KEYBOARD_BTN,"Button",BS_OWNERDRAW,
                     109,100,77,14
     CONTROL         "Sound",IDC_OPT_SOUND_BTN,"Button",BS_OWNERDRAW,22,100,
                     77,14
+    CONTROL         "Options Menu",1,"Button",BS_OWNERDRAW,109,120,77,14
     CONTROL         "Slider2",IDC_SCROLL_SPEED_SLIDER,"msctls_trackbar32",
                     TBS_BOTH | TBS_NOTICKS,90,12,128,15
     RTEXT           "Scroll Rate:",-1,22,12,63,15,SS_CENTERIMAGE | NOT 
@@ -1608,7 +1624,7 @@ END
 STRINGTABLE DISCARDABLE 
 BEGIN
     TXT_NONE                " "
-    TXT_COPYRIGHT           "Â© 2000 Electronic Arts, All Rights Reserved"
+    TXT_COPYRIGHT           "Ã‚Â© 2000 Electronic Arts, All Rights Reserved"
     TXT_TIME_FORMAT_HOURS   "Time:%02d:%02d:%02d"
     TXT_TIME_FORMAT_NO_HOURS "Time:%02d:%02d"
     TXT_MONEY_FORMAT_1      "$%d"
@@ -2111,7 +2127,7 @@ BEGIN
                             "Error - other player does not have this expansion scenario."
     TXT_SCENARIO_ERROR      "Incompatable scenario file detected. The scenario may be corrupt."
     TXT_INVALID             "Invalid option switch."
-    TXT_OPTION_HELP_01      "Tiberian Sun Â© 1999, Westwood Studios\n"
+    TXT_OPTION_HELP_01      "Tiberian Sun Ã‚Â© 1999, Westwood Studios\n"
     TXT_OPTION_HELP_02      "Parameters:\n"
     TXT_OPTION_HELP_03      "  -DESTNET = Specify Network Number of destination system\n"
     TXT_OPTION_HELP_04      "  -SOCKET = Network Socket ID (0 - 16383)\n"

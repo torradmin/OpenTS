@@ -1013,6 +1013,11 @@ bool Select_Game(bool )
 
 	static int protocol = -1;
 
+	// Set by the in-game options menu's Quit Game button; skips the main menu entirely.
+	if (QuitToDesktop) {
+		return(false);
+	}
+
 	/// RA2 calls this here, bugfix?
 	//Theme.Play_Song(Fetch_Main_Menu_Theme());
 
