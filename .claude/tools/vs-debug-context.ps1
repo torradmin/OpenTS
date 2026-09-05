@@ -179,18 +179,52 @@ foreach ($bp in $debugger.Breakpoints) {
 }
 $result.breakpoints = $breakpoints
 
+$result.debugOutputTail = $null
+$result.debugOutputTailError = $null
 try {
     $outputWindow = $dte.ToolWindows.OutputWindow
-    $debugPane = $outputWindow.OutputWindowPanes.Item('Debug')
+    $debugPane = $null
+    foreach ($pane in $outputWindow.OutputWindowPanes) {
+        if ($pane.Name -like '*Debug*') { $debugPane = $pane; break }
+    }
+    if (-not $debugPane) {
+        $debugPane = $outputWindow.OutputWindowPanes.Item('Debug')
+    }
     $textDoc = $debugPane.TextDocument
     $startPoint = $textDoc.StartPoint
     $editPoint = $startPoint.CreateEditPoint()
     $fullText = $editPoint.GetText($textDoc.EndPoint)
     $lines = $fullText -split "`r`n"
-    $tail = $lines | Select-Object -Last 60
+    $tail = $lines | Select-Object -Last 120
     $result.debugOutputTail = $tail -join "`n"
 } catch {
-    $result.debugOutputTail = $null
+    # Surface the failure instead of silently nulling it out, so a caller
+    # can tell "no output pane" apart from "the fetch itself broke".
+    $result.debugOutputTailError = $_.Exception.Message
 }
+
+# The base EnvDTE.Debugger interface has no "current exception" property, but
+# the live COM object is often a more derived type (Debugger2/3/5) that does;
+# PowerShell's late-bound property access reaches it without a static cast.
+$result.exceptionInfo = $null
+try {
+    $exc = $debugger.CurrentException
+    if ($exc) {
+        $result.exceptionInfo = [ordered]@{
+            name        = $exc.Name
+            code        = $exc.Code
+            description = $exc.Description
+        }
+    }
+} catch {
+    $result.exceptionInfoError = $_.Exception.Message
+}
+
+# LastBreakReason is a dbgEventReasonEnum value (5 = ExceptionThrown, 6 =
+# ExceptionNotHandled, 11 = UserBreakpoint, ...). It is the closest thing to
+# "why are we stopped" the base interface offers.
+try {
+    $result.lastBreakReason = [int]$debugger.LastBreakReason
+} catch { }
 
 $result | ConvertTo-Json -Depth 12
