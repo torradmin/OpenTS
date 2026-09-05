@@ -517,11 +517,8 @@ bool LoadOptionsClass::Dialog(void)
 									if (!Save_File(filename, buffer)) {
 										WWMessageBox().Process(TXT_ERROR_SAVING_GAME, TXT_OK, TXT_NONE, TXT_NONE);
 										State = STATE_PENDING;
-									} else {
-										WWMessageBox().Process(TXT_GAME_WAS_SAVED, TXT_OK, TXT_NONE, TXT_NONE);
-										if (Description) {
-											strcpy(Description, buffer);
-										}
+									} else if (Description) {
+										strcpy(Description, buffer);
 									}
 								}
 							}

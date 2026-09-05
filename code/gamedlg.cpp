@@ -129,10 +129,8 @@ void GameControlsClass::Dialog(void)
 				Title_Screen_Restore();
 			}
 		}
-		if (res == 1) {
-			Set();
-			Options.Save_Settings();
-		}
+		Set();
+		Options.Save_Settings();
 
 		OwnerDraw::End_Dialog(_Dialog);
 	}
@@ -349,6 +347,13 @@ void Game_Controls_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, L
 		case IDC_OPT_SOUND_BTN:
 			if (lparam == 0 && GameActive == true) {
 				SpecialDialog = SDLG_SOUND;
+				*retval = IDOK;
+			}
+			break;
+
+		case IDC_OPT_DISPLAY_BTN:
+			if (lparam == 0 && GameActive == true) {
+				SpecialDialog = SDLG_DISPLAY;
 				*retval = IDOK;
 			}
 			break;

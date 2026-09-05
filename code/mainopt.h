@@ -11,3 +11,4 @@
 
 bool Change_Display_Mode(int width, int height);
 void Main_Options_Dialog(void);
+void Show_Display_Options_Dialog(void);

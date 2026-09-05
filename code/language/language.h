@@ -902,6 +902,7 @@
 #define IDC_DELETE_GAME                 1312
 #define IDC_GAME_CONTROLS               1313
 #define IDC_ABORT_MISSION               1314
+#define IDC_QUIT_GAME                   1315
 #define IDC_RESTART_MISSION             1316
 #define IDC_MISSION_LOAD_LIST           1317
 #define IDC_MISSION_SAVE_DESC           1318
@@ -912,6 +913,7 @@
 #define IDC_DETAIL_LEVEL_SLIDER         1323
 #define IDC_OPT_KEYBOARD_BTN            1324
 #define IDC_OPT_SOUND_BTN               1325
+#define IDC_OPT_DISPLAY_BTN             1326
 #define IDC_MUSIC_VOLUME                1327
 #define IDC_SOUND_TRACKLIST             1328
 #define IDC_SOUND_PLAY                  1329
@@ -1136,12 +1138,13 @@
 #define IDD_OPT_CTRL_MP                 3002
 #define IDD_OPT_CTRL_GAME_MP            3003
 #define IDD_SELECT_GAME_TYPE            3004
+#define IDD_QUIT_GAME_CONFIRM           3005
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        3005
+#define _APS_NEXT_RESOURCE_VALUE        3006
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1705
 #define _APS_NEXT_SYMED_VALUE           3105

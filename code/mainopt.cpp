@@ -27,7 +27,6 @@
 #include "misc.h"
 #include "video.h"
 #include "mixfile.h"
-#include "msgbox.h"
 #include "newmenu.h"
 #include "ownrdraw.h"
 #include "sidebar.h"
@@ -49,6 +48,22 @@ GameOptionsClass TempOptions;
 
 
 /// <summary>
+/// Repaints whatever should be showing behind the display mode dialogs.
+/// The main menu has no map to redraw, so it falls back to the menu art; a live game
+/// redraws the tactical map instead, since the surfaces just recreated by
+/// Change_Display_Mode() hold nothing until something draws to them.
+/// </summary>
+static void Refresh_Mode_Background(void)
+{
+	if (GameActive) {
+		Map.Render();
+	} else {
+		Draw_Menu_Background();
+	}
+}
+
+
+/// <summary>
 /// Brings up the main options dialog.
 /// This routine drives the options menu, dispatching to the sound, display, network,
 /// keyboard and game settings dialogs until the player backs out. A resolution change is
@@ -62,9 +77,6 @@ void Main_Options_Dialog(void)
 
 	HWND main_handle;
 	LONG main_rc;
-
-	HWND in_handle;
-	LONG in_rc;
 
 	while (true) {
 		do {
@@ -90,44 +102,9 @@ void Main_Options_Dialog(void)
 				SoundControlsClass().Dialog();
 				break;
 
-			case IDC_OPTMAIN_DISPLAY: {
-				while (true) {
-					do {
-						TempOptions = Options;
-						in_rc = -1;
-						in_handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
-					} while (in_handle == 0);
-					SetWindowLong(in_handle, DWL_USER, (LONG)&in_rc);
-					OwnerDraw::Display_Dialog(in_handle);
-
-					while (in_rc < 0) {
-						if (OwnerDraw::Dialog_Message_Handler() == true) {
-							break;
-						}
-						Title_Screen_Restore();
-					}
-
-					OwnerDraw::End_Dialog(in_handle);
-
-					if (in_rc != 1) {
-						break;
-					}
-					if (TempOptions.ScreenWidth == Options.ScreenWidth && TempOptions.ScreenHeight == Options.ScreenHeight) {
-						break;
-					}
-
-						if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) == 0) {
-							if (!Test_Display_Mode_Dialog(TempOptions.ScreenWidth, TempOptions.ScreenHeight)) {
-								continue;
-							}
-							Options.ScreenWidth = TempOptions.ScreenWidth;
-							Options.ScreenHeight = TempOptions.ScreenHeight;
-						}
-
-					break;
-				}
-			}
-			break;
+			case IDC_OPTMAIN_DISPLAY:
+				Show_Display_Options_Dialog();
+				break;
 
 			case IDC_OPTMAIN_KEYBOARD:
 				Options.Hotkey_Dialog();
@@ -142,6 +119,53 @@ void Main_Options_Dialog(void)
 				GameActive = old_game_active;
 				return;
 		}
+	}
+}
+
+
+/// <summary>
+/// Brings up the display options dialog and tries out a chosen resolution.
+/// This routine is shared by the main menu options and the in game options, since both
+/// suspend game logic for the duration of the dialogs they drive. A resolution change is
+/// offered as a trial first and reverted if the player does not confirm it.
+/// </summary>
+void Show_Display_Options_Dialog(void)
+{
+	HWND in_handle;
+	LONG in_rc;
+
+	while (true) {
+		do {
+			TempOptions = Options;
+			in_rc = -1;
+			in_handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
+		} while (in_handle == 0);
+		SetWindowLong(in_handle, DWL_USER, (LONG)&in_rc);
+		OwnerDraw::Display_Dialog(in_handle);
+
+		while (in_rc < 0) {
+			if (OwnerDraw::Dialog_Message_Handler() == true) {
+				break;
+			}
+			Title_Screen_Restore();
+		}
+
+		OwnerDraw::End_Dialog(in_handle);
+
+		if (in_rc != 1) {
+			break;
+		}
+		if (TempOptions.ScreenWidth == Options.ScreenWidth && TempOptions.ScreenHeight == Options.ScreenHeight) {
+			break;
+		}
+
+		if (!Test_Display_Mode_Dialog(TempOptions.ScreenWidth, TempOptions.ScreenHeight)) {
+			continue;
+		}
+		Options.ScreenWidth = TempOptions.ScreenWidth;
+		Options.ScreenHeight = TempOptions.ScreenHeight;
+
+		break;
 	}
 }
 
@@ -335,7 +359,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 	HiddenSurface->Fill(TBLACK);
 	Update_Visible_Surface();
 	Show_Mouse();
-	Draw_Menu_Background();
+	Refresh_Mode_Background();
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CONFIRM_MODE, Test_Display_Mode_Dialog_Proc);
 	if (dialog) {
@@ -359,6 +383,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 			DebugString("Resetting display mode @ %dx%d\n", Options.ScreenWidth, Options.ScreenHeight);
 			Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
 			LogicalSurface = HiddenSurface;
+			Refresh_Mode_Background();
 			return(false);
 		}
 	}
@@ -430,7 +455,8 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 				}
 				return(0);
 
-				case IDOK: {
+				case IDOK:
+				case IDCANCEL: {
 					if (_previous_mode != _current_mode) {
 						Center_Window_Within_Window(window, MainWindow);
 						HWND list = GetDlgItem(window, IDC_DISPLAY_RESLIST);
@@ -447,12 +473,11 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 					}
 				}
 				break;
-
-				case IDCANCEL:
-					break;
 			}
 			delete [] _modes;
-			*result = LOWORD(wparam);
+
+			// Escape leaves with the same settings a click on OK would have applied.
+			*result = IDOK;
 			break;
 
 		case WM_INITDIALOG: {

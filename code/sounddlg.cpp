@@ -260,6 +260,13 @@ BOOL CALLBACK SoundControlsClass::Sound_Option_Dialog_Func(HWND window, UINT mes
 						}
 						break;
 
+					case IDCANCEL:
+						if (HIWORD(wparam) == 0) {
+							int * res = (int *)GetWindowLong(window, DWL_USER);
+							*res = IDCANCEL;
+						}
+						break;
+
 					/*
 					**	Start the currently selected theme to play.
 					*/

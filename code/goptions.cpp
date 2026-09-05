@@ -55,6 +55,8 @@ void Game_Options_On_INITDIALOG(HWND window);
 BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 BOOL CALLBACK Abort_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+int Quit_Game_Confirm_Dialog(void);
+BOOL CALLBACK Quit_Game_Confirm_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 /// <summary>
 /// Displays the in game options dialog.
@@ -241,6 +243,21 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 							SpecialDialog = SDLG_ABORT;
 						}
 						*retval = IDCANCEL;
+					}
+					break;
+
+				case IDC_QUIT_GAME:
+					if (!code) {
+						ShowWindow(window, SW_HIDE);
+						UpdateWindow(MainWindow);
+						if (Quit_Game_Confirm_Dialog() == IDOK) {
+							QuitToDesktop = true;
+							Queue_Exit();
+							*retval = IDCANCEL;
+						} else {
+							ShowWindow(window, SW_SHOW);
+							UpdateWindow(window);
+						}
 					}
 					break;
 
@@ -438,4 +455,63 @@ void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lp
 			}
 			break;
 	}
+}
+
+
+/// <summary>
+/// Displays the quit game confirmation dialog and waits for an answer.
+/// This routine is used by the in-game options menu's Quit Game button, so the player is
+/// asked plainly whether to leave the game before it happens.
+/// </summary>
+/// <returns>Returns with IDOK to quit to the desktop, or IDCANCEL to keep playing.</returns>
+int Quit_Game_Confirm_Dialog(void)
+{
+	int rc = 0;
+
+	HWND dialog = OwnerDraw::Begin_Dialog(IDD_QUIT_GAME_CONFIRM, (DLGPROC)Quit_Game_Confirm_Dialog_Proc);
+
+	if (dialog) {
+
+		SetWindowLong(dialog, DWL_USER, (LONG)&rc);
+
+		OwnerDraw::Display_Dialog(dialog);
+
+		while (rc == 0) {
+			if (OwnerDraw::Dialog_Message_Handler() == true) {
+				rc = IDCANCEL;
+			}
+		}
+		OwnerDraw::End_Dialog(dialog);
+	}
+	return(rc);
+}
+
+
+/// <summary>
+/// Handles messages for the quit game confirmation dialog.
+/// This routine offers every message to the owner draw system first, then records whichever
+/// button the player pressed into the result Quit_Game_Confirm_Dialog attached to the
+/// dialog window.
+/// </summary>
+/// <returns>Returns with the result of the owner draw default dialog handler.</returns>
+BOOL CALLBACK Quit_Game_Confirm_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+{
+	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	if (rc == 0) {
+		if (message == WM_COMMAND && HIWORD(wparam) == 0) {
+			int* retval = (int *)GetWindowLong(window, DWL_USER);
+
+			switch (LOWORD(wparam)) {
+				case IDOK:
+					*retval = IDOK;
+					break;
+
+				case IDCANCEL:
+					*retval = IDCANCEL;
+					break;
+			}
+		}
+		rc = 0;
+	}
+	return(rc);
 }

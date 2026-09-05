@@ -94,6 +94,7 @@
 #include "loaddlg.h"
 #include "logic.h"
 #include "mainloop.h"
+#include "mainopt.h"
 #include "msgbox.h"
 #include "movie.h"
 #include "mplayer.h"
@@ -260,6 +261,11 @@ void Ingame_Menu_Dialog(void)
 
 				case SDLG_KEYBOARD:
 					Options.Hotkey_Dialog();
+					SpecialDialog = SDLG_SETTINGS;
+					break;
+
+				case SDLG_DISPLAY:
+					Show_Display_Options_Dialog();
 					SpecialDialog = SDLG_SETTINGS;
 					break;
 

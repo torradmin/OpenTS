@@ -146,6 +146,7 @@ extern bool							PlayerWins;
 extern bool							PlayerLoses;
 extern bool							PlayerRestarts;
 extern bool							PlayerAborts;
+extern bool							QuitToDesktop;
 extern int							Frame;
 extern VoxType						SpeechRecord[1];
 extern void *						SpeechBuffer[1];
