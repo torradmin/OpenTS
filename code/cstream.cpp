@@ -268,7 +268,12 @@ HRESULT CStreamClass::Read(void *pv, ULONG cb, ULONG *pcbRead)
 		lzo_byte *in = (lzo_byte *)StreamBuffer;
 		unsigned int out_len = BUFFER_SIZE;
 		lzo1x_decompress(in, inlen, out, &out_len, 0);
-		CurOffset = BlockHead.UncompSize;
+
+		// The trailing block's compressed length can fall short of BUFFER_SIZE; trust the
+		// codec's own output count over the block header, which a short final block does
+		// not update to match.
+		BlockHead.UncompSize = out_len;
+		CurOffset = out_len;
 	}
 
 	if (pcbRead != NULL) {
@@ -490,7 +495,7 @@ HRESULT CStreamClass::Compress(void *in_buffer, ULONG length)
 	HRESULT hr;
 	unsigned int out_len = length;
 	lzo1x_1_compress((lzo_byte *)in_buffer, length, (lzo_byte *)StreamBuffer, &out_len, (lzo_byte *)LZODictionary);
-	BlockHead.UncompSize = BUFFER_SIZE;
+	BlockHead.UncompSize = length;
 	length = 0;
 	BlockHead.CompSize = out_len;
 
