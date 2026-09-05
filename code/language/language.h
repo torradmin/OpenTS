@@ -1151,8 +1151,8 @@
 #define IDD_OPT_CTRL_GAME_MP            3003
 #define IDD_SELECT_GAME_TYPE            3004
 #define IDD_DESYNC_HOST                 3005
-#define IDD_DESYNC_WAIT					3006
-#define IDD_QUIT_GAME_CONFIRM			3007
+#define IDD_DESYNC_WAIT                 3006
+#define IDD_QUIT_GAME_CONFIRM           3007
 #define IDC_DESYNC_HEADER               1705
 #define IDC_DESYNC_PLAYER_LIST          1706
 #define IDC_DESYNC_CHAT_LIST            1707
