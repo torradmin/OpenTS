@@ -344,7 +344,7 @@ bool Change_Display_Mode(int width, int height)
 	Map.Init_IO();
 	Map.Activate(
 #ifdef _DEBUG
-		Debug_Map == true ? 1 : 0
+		Debug_Map == true ? 0 : 1
 #else
 		1
 #endif
