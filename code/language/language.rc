@@ -862,8 +862,6 @@ IDD_OPT_CTRL_SP DIALOG DISCARDABLE  0, 0, 209, 157
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
-                    BS_OWNERDRAW,47,114,115,14
     CONTROL         "Restate Briefing",IDC_BRIEFING,"Button",BS_OWNERDRAW,47,
                     29,115,14
     CONTROL         "Load Game",IDC_LOAD_GAME,"Button",BS_OWNERDRAW,47,46,
@@ -876,8 +874,10 @@ BEGIN
                     47,12,115,14
     CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
                     47,97,115,14
-    CONTROL         "Quit Game",IDC_QUIT_GAME,"Button",BS_OWNERDRAW,47,131,
-                    115,14
+    CONTROL         "Quit Game",IDC_QUIT_GAME,"Button",BS_OWNERDRAW,
+                    47,114,115,14
+    CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
+                    BS_OWNERDRAW,47,131,115,14
 END
 
 IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 75
