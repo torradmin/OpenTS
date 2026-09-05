@@ -430,12 +430,19 @@ int Init_Game(int , char * [])
 		}
 
 		DebugString("Playing startup movies.\n");
-		Play_Movie("WWLOGO.VQA", THEME_NONE);
-		if (!Get_New_Menu()->MixFile) {
-			if (CCFileClass("FS_TITLE.VQA").Is_Available() == true) {
-				Play_Movie("FS_TITLE.VQA", THEME_NONE, false);
-			} else {
-				Play_Movie("STARTUP.VQA", THEME_NONE, false);
+
+		if (ConfigINI.Is_Present("Intro", "PlayIntro")) {
+			if (ConfigINI.Get_Bool("Intro", "PlayIntro", true) == true) {
+
+				Play_Movie("WWLOGO.VQA", THEME_NONE);
+
+				if (!Get_New_Menu()->MixFile) {
+					if (CCFileClass("FS_TITLE.VQA").Is_Available() == true) {
+						Play_Movie("FS_TITLE.VQA", THEME_NONE, false);
+					} else {
+						Play_Movie("STARTUP.VQA", THEME_NONE, false);
+					}
+				}
 			}
 		}
 	}
