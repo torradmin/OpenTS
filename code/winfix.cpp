@@ -37,6 +37,7 @@
 
 #include "ini.h"
 #include "misc.h"
+#include "video.h"
 #include "ownrdraw.h"
 #include "trim.h"
 
@@ -862,9 +863,12 @@ void Center_Window_Within_Window(HWND window, HWND parent)
 	RECT rcl;
 	GetClientRect(parent, &rcl);
 
+	// The frame is scaled uniformly at presentation, so centering on its own logical size
+	// lands correctly on screen regardless of scale or letterboxing.
 	if (parent == MainWindow) {
-		rcl.right = VideoModeWidth;
-		rcl.bottom = VideoModeHeight;
+		VideoScaleInfo const & scale = Video_Get_Scale_Info();
+		rcl.right = scale.GameWidth;
+		rcl.bottom = scale.GameHeight;
 	}
 
 	ClientToScreen(parent, (LPPOINT)&rcl);
@@ -886,6 +890,20 @@ void Center_Window_Within_Window(HWND window, HWND parent)
 	}
 	if (y < 0) {
 		y = 0;
+	}
+
+	// A dialog placed past the window's own bounds is invisible to Windows, so a frame
+	// larger than the real window gets centered as far over as the window allows.
+	if (parent == MainWindow) {
+		VideoScaleInfo const & scale = Video_Get_Scale_Info();
+		int const max_x = scale.DrawableWidth - rect.right;
+		int const max_y = scale.DrawableHeight - rect.bottom;
+		if (max_x >= 0 && x > max_x) {
+			x = max_x;
+		}
+		if (max_y >= 0 && y > max_y) {
+			y = max_y;
+		}
 	}
 
 	SetWindowPos(window, 0, x, y, -1, -1, SWP_NOSIZE|SWP_NOZORDER);

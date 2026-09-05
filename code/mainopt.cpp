@@ -39,6 +39,8 @@
 
 #include "color.hh"
 
+#include <algorithm>
+
 
 BOOL CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 BOOL CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
@@ -87,7 +89,20 @@ void Main_Options_Dialog(void)
 		} while (main_handle == 0);
 		SetWindowLong(main_handle, DWL_USER, (LONG)&main_rc);
 
-		OwnerDraw::Move_Dialog(main_handle, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
+		// A dialog past the window's own bounds is invisible to Windows regardless of scale.
+		VideoScaleInfo const & scale = Video_Get_Scale_Info();
+		int y = (scale.GameHeight - 400) / 2 + 147;
+
+		RECT main_rect;
+		GetWindowRect(main_handle, &main_rect);
+		int const max_y = scale.DrawableHeight - (main_rect.bottom - main_rect.top);
+		if (max_y >= 0 && y > max_y) {
+			y = max_y;
+		}
+		if (y < 0) {
+			y = 0;
+		}
+		OwnerDraw::Move_Dialog(main_handle, -1, y);
 		OwnerDraw::Display_Dialog(main_handle);
 
 		while (main_rc < 0) {
@@ -301,6 +316,11 @@ bool Change_Display_Mode(int width, int height)
 		MONITORINFO monitor;
 		monitor.cbSize = sizeof(monitor);
 		if (GetMonitorInfo(MonitorFromWindow(MainWindow, MONITOR_DEFAULTTONEAREST), &monitor)) {
+			// A client size at or past the work area's own size leaves the window, title bar
+			// and borders included, larger than the work area no matter where it is placed.
+			newwidth = std::min(newwidth, (int)(monitor.rcWork.right - monitor.rcWork.left));
+			newheight = std::min(newheight, (int)(monitor.rcWork.bottom - monitor.rcWork.top));
+
 			if (x + newwidth > monitor.rcWork.right) x = monitor.rcWork.right - newwidth;
 			if (y + newheight > monitor.rcWork.bottom) y = monitor.rcWork.bottom - newheight;
 			if (x < monitor.rcWork.left) x = monitor.rcWork.left;
@@ -465,6 +485,7 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 	};
 
 	static int * _modes = NULL;
+	static int _mode_count = 0;
 	static int _current_mode = -1;
 	static int _previous_mode = -1;
 	static bool _initialized = true;
@@ -484,14 +505,27 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 
 				case IDOK:
 				case IDCANCEL: {
+					// WM_COMMAND can reenter this handler before a prior call has returned.
+					static bool _handling = false;
+					if (_handling) {
+						break;
+					}
+					_handling = true;
+
 					if (_previous_mode != _current_mode) {
-						Center_Window_Within_Window(window, MainWindow);
 						HWND list = GetDlgItem(window, IDC_DISPLAY_RESLIST);
 						if (list) {
 							int index = ListBox_GetItemData(list, _current_mode);
-							int * modes = &_modes[2 * index];
-							TempOptions.ScreenWidth = modes[0];
-							TempOptions.ScreenHeight = modes[1];
+
+							// No row is selected when the current resolution matched none of
+							// the enumerated modes, a stale index from a listbox this dialog
+							// instance never populated is also not a mode, and this call may
+							// itself be a duplicate dispatch that finds _modes already freed.
+							if (_modes != NULL && index >= 0 && index < _mode_count) {
+								int * modes = &_modes[2 * index];
+								TempOptions.ScreenWidth = modes[0];
+								TempOptions.ScreenHeight = modes[1];
+							}
 						}
 					}
 					HWND button = GetDlgItem(window, IDC_STRETCH_MOVIES);
@@ -502,10 +536,16 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 					if (scale) {
 						TempOptions.UIScale = Slider_GetPos(scale);
 					}
+
+					_handling = false;
 				}
 				break;
 			}
+
+			// A reentrant call that found _handling already set still reaches here, so this
+			// must tolerate running twice; freeing a null pointer is well defined and safe.
 			delete [] _modes;
+			_modes = NULL;
 
 			// Escape leaves with the same settings a click on OK would have applied.
 			*result = IDOK;
@@ -543,6 +583,7 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 			}
 			ListBox_SetCurSel(list, initial_mode);
 			_initialized = true;
+			_mode_count = item_index;
 			_current_mode = initial_mode;
 			_previous_mode = initial_mode;
 

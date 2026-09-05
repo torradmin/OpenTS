@@ -178,6 +178,7 @@
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
+#include "video.h"
 #include "voc.h"
 #include "vox.h"
 #include "vqoption.h"
@@ -847,7 +848,20 @@ static CampaignType Choose_Campaign(void)
 	if (dialog != NULL) {
 		SetWindowLong(dialog, DWL_USER, (LONG) &state);
 
-		OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
+		// A dialog past the window's own bounds is invisible to Windows regardless of scale.
+		VideoScaleInfo const & scale = Video_Get_Scale_Info();
+		int y = (scale.GameHeight - 400) / 2 + 147;
+
+		RECT campaign_rect;
+		GetWindowRect(dialog, &campaign_rect);
+		int const max_y = scale.DrawableHeight - (campaign_rect.bottom - campaign_rect.top);
+		if (max_y >= 0 && y > max_y) {
+			y = max_y;
+		}
+		if (y < 0) {
+			y = 0;
+		}
+		OwnerDraw::Move_Dialog(dialog, -1, y);
 		OwnerDraw::Display_Dialog(dialog);
 
 		while (state.ChoiceMade == false) {
@@ -3131,7 +3145,21 @@ int Main_Menu(unsigned int timeout)
 		Load_Title_Screen(menu, HiddenSurface, &CCPalette);
 		Draw_Version_Text(HiddenSurface);
 		Update_Visible_Surface();
-		OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
+
+		// A dialog past the window's own bounds is invisible to Windows regardless of scale.
+		VideoScaleInfo const & scale = Video_Get_Scale_Info();
+		int y = (scale.GameHeight - 400) / 2 + 147;
+
+		RECT title_rect;
+		GetWindowRect(dialog, &title_rect);
+		int const max_y = scale.DrawableHeight - (title_rect.bottom - title_rect.top);
+		if (max_y >= 0 && y > max_y) {
+			y = max_y;
+		}
+		if (y < 0) {
+			y = 0;
+		}
+		OwnerDraw::Move_Dialog(dialog, -1, y);
 		OwnerDraw::Display_Dialog(dialog);
 		SetFocus(MainWindow);
 

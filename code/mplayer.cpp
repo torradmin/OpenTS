@@ -47,6 +47,7 @@
 #include "msgbox.h"
 #include "ownrdraw.h"
 #include "session.h"
+#include "video.h"
 
 class ListClass;
 
@@ -80,7 +81,20 @@ GameType Select_MPlayer_Game (void)
 
 		bool process = true;
 		while (process) {
-			OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
+			// A dialog past the window's own bounds is invisible to Windows regardless of scale.
+			VideoScaleInfo const & scale = Video_Get_Scale_Info();
+			int y = (scale.GameHeight - 400) / 2 + 147;
+
+			RECT mplayer_rect;
+			GetWindowRect(dialog, &mplayer_rect);
+			int const max_y = scale.DrawableHeight - (mplayer_rect.bottom - mplayer_rect.top);
+			if (max_y >= 0 && y > max_y) {
+				y = max_y;
+			}
+			if (y < 0) {
+				y = 0;
+			}
+			OwnerDraw::Move_Dialog(dialog, -1, y);
 			OwnerDraw::Display_Dialog(dialog);
 			rc = -1;
 			while (rc == -1) {

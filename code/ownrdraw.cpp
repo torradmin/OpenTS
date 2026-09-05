@@ -6505,18 +6505,11 @@ void OwnerDraw::Draw_Dialog_Back(HWND window)
 		Surface * back = SurfaceCache.GetSurface("dbak6440.pcx");
 
 		Rect dst = rFull;
-		Rect src = rFull;
-
 		dst -= Point2D(rcDisp.left, rcDisp.top);
 
-		if (VideoModeWidth > back->Get_Width()) {
-			src.X += (VideoModeWidth - back->Get_Width()) / -2;
-		}
-		if (VideoModeHeight > back->Get_Height()) {
-			src.Y += (VideoModeHeight - back->Get_Height()) / -2;
-		}
-
-		surf->Blit_From(dst, *back, src);
+		// A 1:1 copy left the rest of an enlarged dialog blank once the source ran out, so
+		// this tiles the same way the side rails and corners already do below.
+		SurfaceCache.Draw(dst, *surf, *back);
 
 		/// Side bars
 		Surface * leftbar  = SurfaceCache.GetSurface("leftbar.pcx");
@@ -6751,7 +6744,21 @@ HWND OwnerDraw::Begin_Dialog(int id, DLGPROC proc)
 void OwnerDraw::End_Dialog(HWND window)
 {
 	Keyboard->Clear();
+
+	// DestroyWindow still routes WM_NCDESTROY through CtrlProc_Internal, which dereferences
+	// the dictionary entry unconditionally, so the handles are forgotten only once destruction
+	// has actually finished.
+	ArrayList<HWND> children;
+	EnumChildWindows(window, (WNDENUMPROC)ODAddWindowToList, (LPARAM)&children);
+
 	DestroyWindow(window);
+
+	HWND child = NULL;
+	for (int index = 0; index < children.length(); index++) {
+		children.get(child, index);
+		ODRemoveFromDict(child, 0);
+	}
+	ODRemoveFromDict(window, 0);
 
 	for (int index = 0; index < g_DialogCount; index++) {
 		if (g_Dialogs[index].handle == window) {
@@ -6916,14 +6923,14 @@ int OwnerDraw::Move_Dialog(HWND window, int x, int y)
 	int xpos;
 	int ypos;
 
-	RECT rect1;
-	rect1.left = 0;
-	rect1.top = 0;
-	rect1.right = VideoModeWidth;
-	rect1.bottom = VideoModeHeight;
+	// Only the origin is used below -- x/y of -1 keeps the dialog where it already is,
+	// rather than centering it, so no extent is needed here.
+	POINT origin = {0, 0};
+	ClientToScreen(MainWindow, &origin);
 
-	ClientToScreen(MainWindow, (LPPOINT)&rect1);
-	ClientToScreen(MainWindow, (LPPOINT)&rect1.right);
+	RECT rect1;
+	rect1.left = origin.x;
+	rect1.top = origin.y;
 
 	RECT rect2;
 	GetWindowRect(window, &rect2);

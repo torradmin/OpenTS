@@ -498,6 +498,12 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 
 		int windowwidth = rect.right - rect.left;
 		int windowheight = rect.bottom - rect.top;
+
+		// A client size at or past the screen's own size would otherwise leave the window,
+		// title bar and borders included, larger than the screen and its far edge off it.
+		windowwidth = std::min(windowwidth, GetSystemMetrics(SM_CXSCREEN));
+		windowheight = std::min(windowheight, GetSystemMetrics(SM_CYSCREEN));
+
 		int x = (GetSystemMetrics(SM_CXSCREEN) - windowwidth) / 2;
 		int y = (GetSystemMetrics(SM_CYSCREEN) - windowheight) / 2;
 
