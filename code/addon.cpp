@@ -11,11 +11,14 @@
 
 #include "addon.h"
 
+#include "_rules.h"
 #include "ccfile.h"
+#include "ccini.h"
 #include "data.h"
 #include "init.h"
 #include "language/language.h"
 #include "ownrdraw.h"
+#include "sun.h"
 
 BOOL CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
@@ -47,9 +50,12 @@ AddonType operator--(AddonType & val)
 
 /// <summary>
 /// Asks the player which game they wish to play.
-/// This routine puts up the game type dialog whenever an expansion has been detected, and
-/// enables whichever addon the player settles on. With nothing but the base game present
-/// there is no choice to make, so the dialog never appears.
+/// If [Options] Addon= is present in SUN.INI, that value is used and the dialog is skipped.
+/// Otherwise this routine puts up the game type dialog whenever an expansion has been
+/// detected, and enables whichever addon the player settles on. With nothing but the base
+/// game present there is no choice to make, so the dialog never appears. A choice made from
+/// the dialog is written back to the same key when it was already present, so an opted-in
+/// player gets it kept in step with whichever addon was picked most recently.
 /// </summary>
 /// <param name="type">The addon that the player chose to play.</param>
 /// <returns>bool; Should the game carry on? Returns false if the player backed out.</returns>
@@ -58,6 +64,17 @@ bool Select_Game_Type_Dialog(AddonType &type)
 	int retval;
 
 	type = ADDON_BASE_GAME;
+
+	if (ConfigINI.Is_Present("Options", "Addon")) {
+		if (ConfigINI.Get_Int("Options", "Addon", ADDON_BASE_GAME) == ADDON_FIRESTORM
+			&& Addon_Installed(ADDON_FIRESTORM)) {
+			Enable_Addon(ADDON_FIRESTORM);
+			type = ADDON_FIRESTORM;
+		}
+
+		Set_Required_Addon(type);
+		return(true);
+	}
 
 	if (Addon_Installed(ADDON_ANY)) {
 		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SELECT_GAME_TYPE, Select_Game_Type_Dialog_Proc);
@@ -93,6 +110,8 @@ bool Select_Game_Type_Dialog(AddonType &type)
 				case IDCANCEL:
 					return(false);
 			}
+
+			Save_Addon_Type(type);
 		}
 
 		Set_Required_Addon(type);
@@ -229,6 +248,24 @@ AddonType Get_Required_Addon(void)
 void Set_Required_Addon(AddonType addon)
 {
 	RequiredAddon = addon;
+}
+
+
+/// <summary>
+/// Keeps SUN.INI's [Options] Addon= key in step with the given addon, if that key is
+/// already present. A player who never added the key is left alone; one who did gets it
+/// updated so it keeps naming whichever addon was picked most recently.
+/// </summary>
+void Save_Addon_Type(AddonType addon)
+{
+	if (!ConfigINI.Is_Present("Options", "Addon")) {
+		return;
+	}
+
+	CDFileClass file(CONFIG_FILE_NAME);
+
+	ConfigINI.Put_Int("Options", "Addon", addon);
+	ConfigINI.Save(file, false);
 }
 
 

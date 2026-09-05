@@ -45,7 +45,7 @@ class NewMenuClass
 		static __forceinline int Game_Select_Loop(NewMenuClass * menu);
 		int Display_Game_Select_Menu(char const * section);
 		int Display_Menu(char const * section, DynamicVectorClass<int> & options);
-		int Select_Game_Type(void);
+		int Select_Game_Type(bool & auto_selected);
 		int Display_Tiberian_Sun_Menu(void);
 		int Display_Firestorm_Menu(void);
 
@@ -70,6 +70,11 @@ class NewMenuClass
 		 * changes along with the page.
 		 */
 		char * Background;
+
+		/*
+		 * SUN.INI's [Options] Addon= key skips the game select page only while this is false.
+		 */
+		bool AddonAutoSelected;
 };
 
 NewMenuClass * Get_New_Menu(void);

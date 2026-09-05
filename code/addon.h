@@ -27,6 +27,7 @@ void Disable_Addon(AddonType addon);
 bool Is_Required_Addon(AddonType addon);
 AddonType Get_Required_Addon(void);
 void Set_Required_Addon(AddonType addon);
+void Save_Addon_Type(AddonType addon);
 const char *Get_Addon_Title(AddonType addon);
 bool Select_Game_Type_Dialog(AddonType &type);
 

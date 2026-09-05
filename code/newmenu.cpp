@@ -12,8 +12,10 @@
 #include "newmenu.h"
 
 #include "_pk.h"
+#include "_rules.h"
 #include "addon.h"
 #include "ccfile.h"
+#include "ccini.h"
 #include "grphmenu.h"
 #include "init.h"
 #include "loaddlg.h"
@@ -56,7 +58,8 @@ void Draw_Menu_Background(void)
 NewMenuClass::NewMenuClass(void) :
 	MixFile(NULL),
 	GameMode(-1),
-	Background(NULL)
+	Background(NULL),
+	AddonAutoSelected(false)
 {
 	if (CCFileClass("GMENU.MIX").Is_Available()) {
 		MixFile = new MFCD("GMENU.MIX", &FastKey);
@@ -99,23 +102,24 @@ __forceinline int NewMenuClass::Game_Select_Loop(NewMenuClass * menu)
 
 	while (true) {
 		switch (menu->GameMode) {
-			default:
+			default: {
+				bool auto_selected = false;
 				if (Addon_Installed(ADDON_FIRESTORM)) {
-					item = menu->Select_Game_Type();
+					item = menu->Select_Game_Type(auto_selected);
 				} else {
 					item = GMENU_TIBSUN;
 				}
 				switch (item) {
 					case GMENU_TIBSUN:
 						menu->GameMode = 0;
-						if (CCFileClass("TS_Title.VQA").Is_Available()) {
+						if (!auto_selected && CCFileClass("TS_Title.VQA").Is_Available()) {
 							Play_Movie("TS_Title.VQA", THEME_NONE, false, true, false);
 						}
 						continue;
 
 					case GMENU_FIRESTORM:
 						menu->GameMode = 1;
-						if (CCFileClass("FS_Title.VQA").Is_Available()) {
+						if (!auto_selected && CCFileClass("FS_Title.VQA").Is_Available()) {
 							Play_Movie("FS_Title.VQA", THEME_NONE, false, true, false);
 						}
 						continue;
@@ -135,6 +139,7 @@ __forceinline int NewMenuClass::Game_Select_Loop(NewMenuClass * menu)
 						return(NSEL_VIEW_CREDITS);
 				}
 				break;
+			}
 
 			case 0:
 				item = menu->Display_Tiberian_Sun_Menu();
@@ -224,17 +229,42 @@ int NewMenuClass::Display_Menu(char const * section, DynamicVectorClass<int> & o
 
 /// <summary>
 /// Handles the choice between Tiberian Sun and Firestorm.
-/// This routine will display the game select page and put the addon system into the state
-/// that matches the player's choice. Firestorm needs its disc, so the page is shown again
-/// if the player cannot supply one. The scenario descriptions are reloaded before
-/// returning, since they differ between the two games.
+/// If [Options] Addon= is present in SUN.INI, that value is used for the first call and the
+/// game select page is skipped; later calls always show the page, so backing out to it
+/// still lets the player switch games. A choice made from the page is written back to the
+/// same key when it was already present, so an opted-in player gets it kept in step.
+/// Firestorm needs its disc, so the page is shown again if the player cannot supply one.
+/// The scenario descriptions are reloaded before returning, since they differ between the
+/// two games.
 /// </summary>
+/// <param name="auto_selected">Set to true if the SUN.INI key resolved the choice without
+/// showing the page, false otherwise.</param>
 /// <returns>Returns with the game the player selected.</returns>
-int NewMenuClass::Select_Game_Type(void)
+int NewMenuClass::Select_Game_Type(bool & auto_selected)
 {
 	int result;
 
 	Disable_Addon(ADDON_ANY);
+
+	auto_selected = false;
+
+	if (!AddonAutoSelected && ConfigINI.Is_Present("Options", "Addon")) {
+		AddonAutoSelected = true;
+		auto_selected = true;
+
+		if (ConfigINI.Get_Int("Options", "Addon", ADDON_BASE_GAME) == ADDON_FIRESTORM
+			&& Addon_Installed(ADDON_FIRESTORM)) {
+			Enable_Addon(ADDON_FIRESTORM);
+			Set_Required_Addon(ADDON_FIRESTORM);
+			result = GMENU_FIRESTORM;
+		} else {
+			Set_Required_Addon(ADDON_BASE_GAME);
+			result = GMENU_TIBSUN;
+		}
+
+		Session.Read_Scenario_Descriptions();
+		return(result);
+	}
 
 	bool retry = true;
 	while (retry) {
@@ -243,6 +273,7 @@ int NewMenuClass::Select_Game_Type(void)
 			case GMENU_TIBSUN:
 				Disable_Addon(ADDON_ANY);
 				Set_Required_Addon(ADDON_BASE_GAME);
+				Save_Addon_Type(ADDON_BASE_GAME);
 				retry = false;
 				break;
 
@@ -250,6 +281,7 @@ int NewMenuClass::Select_Game_Type(void)
 				Disable_Addon(ADDON_ANY);
 				Enable_Addon(ADDON_FIRESTORM);
 				Set_Required_Addon(ADDON_FIRESTORM);
+				Save_Addon_Type(ADDON_FIRESTORM);
 				retry = false;
 				break;
 
