@@ -51,6 +51,7 @@ class SpecialClass
 
 		void Read_INI(CCINIClass const & ini);
 		void Write_INI(CCINIClass & ini) const;
+		void Apply_Config_Overrides(void);
 
 		/*
 		**	If the shroud should regenerated, then this flag will be true.

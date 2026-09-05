@@ -39,6 +39,7 @@
 
 #include "special.h"
 
+#include "_rules.h"
 #include "ccini.h"
 #include "globals.h"
 #include "session.h"
@@ -175,6 +176,9 @@ void SpecialClass::Write_INI(CCINIClass &ini) const
 /// This routine is called while the scenario is being read in. The flags that the players
 /// negotiate between themselves are only honored here for a solo mission or when the map
 /// debugger is active -- a network scenario is not allowed to overrule the game options.
+/// A player's own config can in turn override a solo mission's flags, so a preference the
+/// player wants for every mission does not have to be edited into each map; the scenario
+/// editor and network games are exempt so they always show exactly what the map specifies.
 /// </summary>
 /// <param name="ini">The scenario database to fetch the flags from.</param>
 void SpecialClass::Read_INI(CCINIClass const & ini)
@@ -196,5 +200,47 @@ void SpecialClass::Read_INI(CCINIClass const & ini)
 		IsFogOfWar = ini.Get_Bool(SPECIAL, "FogOfWar", IsFogOfWar);
 		IsInert = ini.Get_Bool(SPECIAL, "Inert", IsInert);
 		IsHarvesterImmune = ini.Get_Bool(SPECIAL, "HarvesterImmune", IsHarvesterImmune);
+	}
+
+	Apply_Config_Overrides();
+}
+
+
+/// <summary>
+/// Lets a player's own config override a solo mission's special flags.
+/// Applied after the mission's own flags are settled, whether they just came from a fresh
+/// Read_INI or were restored from a save, so a preference the player wants for every mission
+/// does not have to be edited into each map and survives resuming a save made before it was
+/// set. A network game is exempt, since its flags come from the lobby, not the player's own
+/// config, and must match what every other player agreed to.
+/// </summary>
+void SpecialClass::Apply_Config_Overrides(void)
+{
+	static char const * SPECIAL = "SpecialFlags";
+
+	if (Session.Type != GAME_NORMAL) {
+		return;
+	}
+
+	if (ConfigINI.Is_Present(SPECIAL, "TiberiumGrows")) {
+		IsTGrowth = ConfigINI.Get_Bool(SPECIAL, "TiberiumGrows", IsTGrowth);
+	}
+	if (ConfigINI.Is_Present(SPECIAL, "TiberiumSpreads")) {
+		IsTSpread = ConfigINI.Get_Bool(SPECIAL, "TiberiumSpreads", IsTSpread);
+	}
+	if (ConfigINI.Is_Present(SPECIAL, "DestroyableBridges")) {
+		IsDestroyBridges = ConfigINI.Get_Bool(SPECIAL, "DestroyableBridges", IsDestroyBridges);
+	}
+	if (ConfigINI.Is_Present(SPECIAL, "FixedAlliance")) {
+		IsAllianceFixed = ConfigINI.Get_Bool(SPECIAL, "FixedAlliance", IsAllianceFixed);
+	}
+	if (ConfigINI.Is_Present(SPECIAL, "FogOfWar")) {
+		IsFogOfWar = ConfigINI.Get_Bool(SPECIAL, "FogOfWar", IsFogOfWar);
+	}
+	if (ConfigINI.Is_Present(SPECIAL, "Inert")) {
+		IsInert = ConfigINI.Get_Bool(SPECIAL, "Inert", IsInert);
+	}
+	if (ConfigINI.Is_Present(SPECIAL, "HarvesterImmune")) {
+		IsHarvesterImmune = ConfigINI.Get_Bool(SPECIAL, "HarvesterImmune", IsHarvesterImmune);
 	}
 }

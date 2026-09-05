@@ -3118,6 +3118,10 @@ void ScenarioClass::Load(IStream * stream)
 	savestream.Set_Context("ScenarioClass");
 	Serialize(savestream);
 
+	// The save carries whatever special flags were in force when it was written, so a
+	// player's config override has to be reapplied here too, not just on a fresh Read_INI.
+	Special.Apply_Config_Overrides();
+
 	ElapsedTimer.Start();
 	DebugString("Scenario Load: ElapsedTimer = %d\n", (int)ElapsedTimer);
 }
