@@ -109,6 +109,11 @@ ADAPTER_UNITS = [
       }}),
     ("uicontrol.cpp", "UIControlsClass", ["Read_INI"],
      {"file": "ui.ini", "group": "UI controls"}),
+    # Select_Game_Type_Dialog is the multiplayer entry's addon picker; the
+    # main menu's own picker, NewMenuClass::Select_Game_Type, reads the same
+    # setting and is a reasoned duplicate in ini-read-exclusions.yaml.
+    ("addon.cpp", "AddonType", [":Select_Game_Type_Dialog"],
+     {"file": "sun.ini", "group": "client settings"})
 ]
 
 

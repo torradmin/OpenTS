@@ -147,3 +147,10 @@ site_exclusions:
     keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ContinueWithoutHumans, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameID, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ScrapMetal, Seed, ShortGame, SkipScoreScreen, TechLevel, Tournament, UnitCount, WriteStatistics]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.
+
+  - path: code/newmenu.cpp
+    function: NewMenuClass::Select_Game_Type
+    keys: [Addon]
+    classification: duplicate
+    canonical_key: Addon
+    reason: The main-menu game-type picker re-reads the same Addon setting already extracted from Select_Game_Type_Dialog, the multiplayer entry's own picker.
