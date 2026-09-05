@@ -95,6 +95,7 @@ class LoadOptionsClass
 		bool Load(void);
 		bool Save(char * description);
 		bool Delete(void);
+		bool Manage(char * description);
 
 		void Pick_Filename(char * file_name);
 		bool Files_Present(void);
@@ -121,10 +122,12 @@ class LoadOptionsClass
 		static void Load_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
 		static void Save_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
 		static void Delete_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
+		static void Manage_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
 
 		static LRESULT CALLBACK Load_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 		static LRESULT CALLBACK Save_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 		static LRESULT CALLBACK Delete_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+		static LRESULT CALLBACK Manage_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 		/*
 		**	This is the requested style of the dialog

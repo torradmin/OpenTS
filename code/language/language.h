@@ -861,6 +861,7 @@
 #define TXT_QUICK_LOAD_DESC             1103
 #define TXT_QUICKSAVE_DESCRIPTION       1104
 #define TXT_NO_QUICKSAVE                1105
+#define TXT_CONFIRM_LOAD				1106
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046
@@ -1139,14 +1140,17 @@
 #define IDD_OPT_CTRL_GAME_MP            3003
 #define IDD_SELECT_GAME_TYPE            3004
 #define IDD_QUIT_GAME_CONFIRM           3005
+#define IDD_MISSION_MANAGE              3006
+#define IDC_MISSION_MANAGE_LIST         1705
+#define IDC_MISSION_MANAGE_DESC         1706
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        3006
+#define _APS_NEXT_RESOURCE_VALUE        3007
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1705
+#define _APS_NEXT_CONTROL_VALUE         1707
 #define _APS_NEXT_SYMED_VALUE           3105
 #endif
 #endif

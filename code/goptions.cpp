@@ -120,7 +120,7 @@ void Game_Options_Dialog(void)
 /// <summary>
 /// Handles messages for the in game options dialog.
 /// This routine offers every message to the owner draw system first. What is left it uses
-/// to service the option buttons -- save, load, delete, briefing, resume, abort and
+/// to service the option buttons -- save/load/delete, briefing, resume, abort and
 /// settings -- either acting on them directly or noting the player's choice for
 /// Game_Options_Dialog to deal with once the dialog comes down. Dragging the game speed or
 /// connection quality slider updates the label beside it.
@@ -162,10 +162,13 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 							UpdateWindow(MainWindow);
 							char description[512];
 							strcpy(description, Scen->Description);
-							LoadOptionsClass().Save(description);
-							Game_Options_On_INITDIALOG(window);
-							ShowWindow(window, SW_SHOW);
-							UpdateWindow(window);
+							if (LoadOptionsClass().Manage(description)) {
+								*retval = IDC_LOAD_GAME;
+							} else {
+								Game_Options_On_INITDIALOG(window);
+								ShowWindow(window, SW_SHOW);
+								UpdateWindow(window);
+							}
 						} else if (Is_Multiplayer_Saving_Allowed()) {
 							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SAVEGAME));
 							*retval = IDC_SAVE_GAME;
@@ -173,33 +176,9 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 					}
 					break;
 
-				case IDC_LOAD_GAME:
-					if (!code) {
-						ShowWindow(window, SW_HIDE);
-						UpdateWindow(MainWindow);
-						if (LoadOptionsClass().Load()) {
-							*retval = IDC_LOAD_GAME;
-						} else {
-							ShowWindow(window, SW_SHOW);
-							UpdateWindow(window);
-						}
-					}
-					break;
-
 				case IDC_BRIEFING:
 					if (!code) {
 						*retval = IDC_BRIEFING;
-					}
-					break;
-
-				case IDC_DELETE_GAME:
-					if (!code) {
-						ShowWindow(window, SW_HIDE);
-						UpdateWindow(MainWindow);
-						LoadOptionsClass().Delete();
-						Game_Options_On_INITDIALOG(window);
-						ShowWindow(window, SW_SHOW);
-						UpdateWindow(window);
 					}
 					break;
 
@@ -313,20 +292,6 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 void Game_Options_On_INITDIALOG(HWND window)
 {
 	HWND handle;
-
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		bool present = LoadOptionsClass().Files_Present();
-
-		handle = GetDlgItem(window, IDC_LOAD_GAME);
-		if (handle) {
-			EnableWindow(handle, present);
-		}
-
-		handle = GetDlgItem(window, IDC_DELETE_GAME);
-		if (handle) {
-			EnableWindow(handle, present);
-		}
-	}
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		handle = GetDlgItem(window, IDC_SAVE_GAME);

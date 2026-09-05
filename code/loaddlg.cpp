@@ -57,6 +57,8 @@
 #include "session.h"
 #include "win.h"
 
+static bool Saved_Game_Exists(char const * name);
+
 
 /***********************************************************************************************
  * LoadOptionsClass::LoadOptionsClass -- class constructor                                     *
@@ -157,6 +159,172 @@ bool LoadOptionsClass::Delete(void)
 
 
 /// <summary>
+/// Brings up the combined load, save and delete dialog.
+/// </summary>
+/// <param name="description">The description to suggest for a new save.</param>
+/// <returns>bool; Was a game loaded?</returns>
+bool LoadOptionsClass::Manage(char *description)
+{
+	Style = SAVE;
+	Description = description;
+
+	if (Disk_Space_Available() < MinSpaceRequired) {
+		WWMessageBox().Process(TXT_DISKFULL, TXT_OK, TXT_NONE, TXT_NONE);
+		return(false);
+	}
+
+	HWND dialog = OwnerDraw::Begin_Dialog(IDD_MISSION_MANAGE, (DLGPROC)Manage_Dialog_Proc);
+	HWND list = dialog ? GetDlgItem(dialog, IDC_MISSION_MANAGE_LIST) : 0;
+
+	State = STATE_PENDING;
+	bool loaded = false;
+
+	if (dialog) {
+		SetWindowLong(dialog, DWL_USER, (LONG)this);
+
+		Fill_List(list);
+
+		OwnerDraw::Display_Dialog(dialog);
+
+		char buffer[256];
+
+		do {
+			while (State == STATE_PENDING) {
+				if (OwnerDraw::Dialog_Message_Handler() == true) {
+					State = STATE_CLOSE;
+				}
+
+				if (Callback) {
+					Callback();
+				}
+
+				if (!GameActive) {
+					Title_Screen_Restore(0);
+				}
+			}
+
+			if (State == STATE_CLOSE) {
+				break;
+			}
+
+			LRESULT row = ListBox_GetCurSel(list);
+			FileEntryClass * entry = (row != LB_ERR) ? (FileEntryClass *)ListBox_GetItemData(list, row) : NULL;
+
+			switch ((int)State) {
+				case IDC_LOAD_GAME:
+					if (entry != NULL && entry->Valid) {
+						ShowWindow(dialog, SW_HIDE);
+						UpdateWindow(MainWindow);
+
+						if (WWMessageBox()._Process(TXT_CONFIRM_LOAD, 1, TXT_YES, TXT_NO, TXT_NONE)) {
+							ShowWindow(dialog, SW_SHOW);
+							UpdateWindow(dialog);
+							State = STATE_PENDING;
+							break;
+						}
+
+						if (entry->Num != -1) {
+							Init_Campaigns();
+						}
+
+						if (Load_File(entry->Filename)) {
+							loaded = true;
+							State = STATE_CLOSE;
+						} else {
+							WWMessageBox().Process(TXT_ERROR_LOADING_GAME, TXT_OK, TXT_NONE, TXT_NONE);
+							ShowWindow(dialog, SW_SHOW);
+							UpdateWindow(dialog);
+							State = STATE_PENDING;
+						}
+					} else {
+						State = STATE_PENDING;
+					}
+					break;
+
+				case IDC_SAVE_GAME: {
+					GetWindowText(GetDlgItem(dialog, IDC_MISSION_MANAGE_DESC), buffer, DESCRIP_MAX+36);
+
+					if (strlen(buffer) == 0) {
+						ShowWindow(dialog, SW_HIDE);
+						UpdateWindow(MainWindow);
+						WWMessageBox().Process(TXT_MUSTENTER_DESCRIPTION, TXT_OK, TXT_NONE, TXT_NONE);
+						ShowWindow(dialog, SW_SHOW);
+						UpdateWindow(dialog);
+						SetFocus(GetDlgItem(dialog, IDC_MISSION_MANAGE_DESC));
+						Edit_SetSel(GetDlgItem(dialog, IDC_MISSION_MANAGE_DESC), -1, -1);
+						State = STATE_PENDING;
+						break;
+					}
+
+					const char * filename = NULL;
+					char test_filename[256];
+
+					if (entry && entry->Valid) {
+						filename = entry->Filename;
+					} else {
+						Pick_Filename(test_filename);
+						filename = test_filename;
+					}
+
+					ShowWindow(dialog, SW_HIDE);
+					UpdateWindow(MainWindow);
+
+					bool exists = Saved_Game_Exists(filename);
+					if (exists && WWMessageBox()._Process(TXT_CONFIRM_SAVE, 1, TXT_YES, TXT_NO, TXT_NONE)) {
+						ShowWindow(dialog, SW_SHOW);
+						UpdateWindow(dialog);
+						State = STATE_PENDING;
+					} else if (!Save_File(filename, buffer)) {
+						WWMessageBox().Process(TXT_ERROR_SAVING_GAME, TXT_OK, TXT_NONE, TXT_NONE);
+						ShowWindow(dialog, SW_SHOW);
+						UpdateWindow(dialog);
+						State = STATE_PENDING;
+					} else {
+						if (Description) {
+							strcpy(Description, buffer);
+						}
+						ShowWindow(dialog, SW_SHOW);
+						UpdateWindow(dialog);
+						Fill_List(list);
+						State = STATE_PENDING;
+					}
+					break;
+				}
+
+				case IDC_DELETE_GAME:
+					if (entry != NULL && entry->Valid) {
+						sprintf(buffer, "%s\n%s", Fetch_String(TXT_DELETE_FILE_QUERY), entry->Descr);
+
+						ShowWindow(dialog, SW_HIDE);
+						UpdateWindow(MainWindow);
+
+						if (!WWMessageBox()._Process(buffer, 1, TXT_YES, TXT_NO, TXT_NONE)) {
+							Delete_File(entry->Filename);
+							Fill_List(list);
+						}
+
+						ShowWindow(dialog, SW_SHOW);
+						UpdateWindow(dialog);
+					}
+					State = STATE_PENDING;
+					break;
+
+				default:
+					State = STATE_PENDING;
+					break;
+			}
+		} while (State == STATE_PENDING);
+
+		Clear_List();
+
+		OwnerDraw::End_Dialog(dialog);
+	}
+
+	return(loaded);
+}
+
+
+/// <summary>
 /// Handles a control notification from the load game dialog.
 /// This routine records how the player left the dialog, so that the processing loop
 /// knows whether a game was chosen or the player backed out.
@@ -246,6 +414,49 @@ void LoadOptionsClass::Delete_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, L
 	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLong(window, DWL_USER);
 	switch ((int)wparam) {
 		case IDOK:
+		case IDCANCEL:
+			if (id == 0) {
+				_this->State = (LoadDialogState)wparam;
+			}
+			break;
+	}
+}
+
+
+/// <summary>
+/// Handles a control notification from the combined load/save/delete dialog.
+/// Picking a game in the list copies its description into the edit field, and a
+/// double-click acts as though Load had been pressed. The buttons record how the player
+/// left the dialog.
+/// </summary>
+/// <param name="wparam">The identifier of the control that was activated.</param>
+/// <param name="lparam">Window handle of the control that was activated.</param>
+/// <param name="id">The notification code that accompanied the control.</param>
+void LoadOptionsClass::Manage_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id)
+{
+	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLong(window, DWL_USER);
+	switch ((int)wparam) {
+		case IDC_MISSION_MANAGE_LIST:
+			if (id == 2 && ListBox_GetCount((HWND)lparam) > 0) {
+				_this->State = (LoadDialogState)IDC_LOAD_GAME;
+			} else if (id == 1 && ListBox_GetCount((HWND)lparam) > 0) {
+				int row = ListBox_GetCurSel((HWND)lparam);
+				if (row != LB_ERR) {
+					FileEntryClass * fdata = (FileEntryClass *)ListBox_GetItemData((HWND)lparam, row);
+					if (fdata->Valid) {
+						SetWindowText(GetDlgItem(window, IDC_MISSION_MANAGE_DESC), fdata->Descr);
+					} else if (_this->Description != NULL) {
+						SetWindowText(GetDlgItem(window, IDC_MISSION_MANAGE_DESC), _this->Description);
+					}
+					SetFocus(GetDlgItem(window, IDC_MISSION_MANAGE_DESC));
+					Edit_SetSel(GetDlgItem(window, IDC_MISSION_MANAGE_DESC), 0, -1);
+				}
+			}
+			break;
+
+		case IDC_LOAD_GAME:
+		case IDC_SAVE_GAME:
+		case IDC_DELETE_GAME:
 		case IDCANCEL:
 			if (id == 0) {
 				_this->State = (LoadDialogState)wparam;
@@ -350,6 +561,40 @@ LRESULT CALLBACK LoadOptionsClass::Delete_Dialog_Proc(HWND window, UINT message,
 				SendDlgItemMessage(window, IDC_MISSION_DELETE_LIST, OD_ADDCOLUMN, 0xF9, 2);
 				SendDlgItemMessage(window, IDC_MISSION_DELETE_LIST, OD_ADDCOLUMN, 0x38, 255);
 				SendDlgItemMessage(window, IDC_MISSION_DELETE_LIST, OD_ADDCOLUMN, 0, 315);
+				break;
+		}
+		return(FALSE);
+	}
+	return(rc);
+}
+
+
+/// <summary>
+/// Handles messages for the save game management dialog.
+/// </summary>
+/// <returns>Returns with the message result, or FALSE if nothing here dealt with it.</returns>
+LRESULT CALLBACK LoadOptionsClass::Manage_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+{
+	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+
+	if (rc == 0) {
+
+		switch (message) {
+			case WM_MOVING:
+				return(On_WM_MOVING(window, wparam, lparam));
+
+			case WM_COMMAND:
+				Manage_Dialog_On_WM_COMMAND(window, LOWORD(wparam), lparam, HIWORD(wparam));
+				break;
+
+			case WM_INITDIALOG:
+				SendMessage(GetDlgItem(window, IDC_MISSION_MANAGE_DESC), EM_SETLIMITTEXT, 79, 0);
+				break;
+
+			case OD_SUBCLASSED:
+				SendDlgItemMessage(window, IDC_MISSION_MANAGE_LIST, OD_ADDCOLUMN, 0xF9, 2);
+				SendDlgItemMessage(window, IDC_MISSION_MANAGE_LIST, OD_ADDCOLUMN, 0x38, 255);
+				SendDlgItemMessage(window, IDC_MISSION_MANAGE_LIST, OD_ADDCOLUMN, 0, 315);
 				break;
 		}
 		return(FALSE);
