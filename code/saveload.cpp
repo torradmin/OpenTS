@@ -648,15 +648,20 @@ static bool Put_All(IStream *stream, int save_net)
 static bool Get_All(IStream *stream, bool save_net)
 {
 	Clear_Scenario();
+	DebugString("Loading Scenario\n");
 	Scen->Load(stream);
 	Disable_Addon(ADDON_ANY);
 	Set_Required_Addon(Scen->RequiredAddOn);
+	DebugString("Checking Addon_Installed\n");
 	if (!Addon_Installed(Scen->RequiredAddOn)) {
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	Enable_Addon(Scen->RequiredAddOn);
 
+	DebugString("Loading Prep_For_Side\n");
 	if (!Prep_For_Side(Scen->IsGDI ? SIDE_GDI : SIDE_NOD)) {
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
@@ -666,6 +671,7 @@ static bool Get_All(IStream *stream, bool save_net)
 
 	Map.Set_View_Dimensions(layout.Tactical);
 
+	DebugString("Loading Environment\n");
 	Environment.Load(stream);
 
 	Init_Theater(Scen->Theater);
@@ -679,33 +685,46 @@ static bool Get_All(IStream *stream, bool save_net)
 		}
 	}
 
+	DebugString("Loading Rules\n");
 	Rule->Load(stream);
 
 	if (Scen->SpeechSide != SIDE_NONE) {
+		DebugString("Loading Prep_Speech_For_Side (Scen->SpeechSide)\n");
 		if (!Prep_Speech_For_Side(Scen->SpeechSide)) {
+			DebugString("\t***** FAILED!\n");
 			return(false);
 		}
 	} else {
+		DebugString("Loading Prep_Speech_For_Side (house default)\n");
 		if (!Prep_Speech_For_Side(Scen->IsGDI ? SIDE_GDI : SIDE_NOD)) {
+			DebugString("\t***** FAILED!\n");
 			return(false);
 		}
 	}
 
+	DebugString("Loading AnimTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// AnimTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
+	DebugString("Loading Map\n");
 	Map.Load(stream);
 
+	DebugString("Loading Tubes\n");
 	if (FAILED(Load_Vector(stream))) {	/// Tubes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
+	DebugString("Loading Misc Values\n");
 	if (FAILED(Load_Misc_Values(stream))) {
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
 	Map.Reset_All_Subzones();
+	DebugString("Loading Logic\n");
 	Logic.Load(stream);
 
 	if (TacticalMap != NULL) {
@@ -713,161 +732,265 @@ static bool Get_All(IStream *stream, bool save_net)
 		TacticalMap = NULL;
 	}
 	Tactical * old_tactical;
+	DebugString("Loading TacticalMap\n");
 	if (FAILED(OleLoadFromStream(stream, IID_IUnknown, (LPVOID *)&old_tactical))) {
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
+	DebugString("Loading HouseTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// HouseTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Houses\n");
 	if (FAILED(Load_Vector(stream))) {	/// Houses
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Units\n");
 	if (FAILED(Load_Vector(stream))) {	/// Units
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading UnitTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// UnitTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading InfantryTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// InfantryTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Infantry\n");
 	if (FAILED(Load_Vector(stream))) {	/// Infantry
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading BuildingTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// BuildingTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Buildings\n");
 	if (FAILED(Load_Vector(stream))) {	/// Buildings
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading AircraftTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// AircraftTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Aircraft\n");
 	if (FAILED(Load_Vector(stream))) {	/// Aircraft
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Anims\n");
 	if (FAILED(Load_Vector(stream))) {	/// Anims
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading TaskForces\n");
 	if (FAILED(Load_Vector(stream))) {	/// TaskForces
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading TeamTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// TeamTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Teams\n");
 	if (FAILED(Load_Vector(stream))) {	/// Teams
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading ScriptTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// ScriptTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Scripts\n");
 	if (FAILED(Load_Vector(stream))) {	/// Scripts
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading TagTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// TagTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Tags\n");
 	if (FAILED(Load_Vector(stream))) {	/// Tags
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading TriggerTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// TriggerTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Triggers\n");
 	if (FAILED(Load_Vector(stream))) {	/// Triggers
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading AITriggerTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// AITriggerTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Actions\n");
 	if (FAILED(Load_Vector(stream))) {	/// Actions
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Events\n");
 	if (FAILED(Load_Vector(stream))) {	/// Events
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Factories\n");
 	if (FAILED(Load_Vector(stream))) {	/// Factories
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading VoxelAnimTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// VoxelAnimTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading VoxelAnims\n");
 	if (FAILED(Load_Vector(stream))) {	/// VoxelAnims
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Warheads\n");
 	if (FAILED(Load_Vector(stream))) {	/// Warheads
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Weapons\n");
 	if (FAILED(Load_Vector(stream))) {	/// Weapons
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading ParticleTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// ParticleTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Particles\n");
 	if (FAILED(Load_Vector(stream))) {	/// Particles
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading ParticleSystemTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// ParticleSystemTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading ParticleSystems\n");
 	if (FAILED(Load_Vector(stream))) {	/// ParticleSystems
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading BulletTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// BulletTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Bullets\n");
 	if (FAILED(Load_Vector(stream))) {	/// Bullets
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading WaypointPaths\n");
 	if (FAILED(Load_Vector(stream))) {	/// WaypointPaths
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading SmudgeTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// SmudgeTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading OverlayTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// OverlayTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading LightSources\n");
 	if (FAILED(Load_Vector(stream))) {	/// LightSources
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading BuildingLights\n");
 	if (FAILED(Load_Vector(stream))) {	/// BuildingLights
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Sides\n");
 	if (FAILED(Load_Vector(stream))) {	/// Sides
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Tiberiums\n");
 	if (FAILED(Load_Vector(stream))) {	/// Tiberiums
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading EMPulseClass::EMPulses\n");
 	if (FAILED(Load_Vector(stream))) {	/// EMPulseClass::EMPulses
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading SuperWeaponTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// SuperWeaponTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading SuperWeapons\n");
 	if (FAILED(Load_Vector(stream))) {	/// SuperWeapons
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading TerrainTypes\n");
 	if (FAILED(Load_Vector(stream))) {	/// TerrainTypes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Terrains\n");
 	if (FAILED(Load_Vector(stream))) {	/// Terrains
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading FoggedObjectClass::FoggyObjects\n");
 	if (FAILED(Load_Vector(stream))) {	/// FoggedObjectClass::FoggyObjects
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading AlphaShapes\n");
 	if (FAILED(Load_Vector(stream))) {	/// AlphaShapes
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading Waves\n");
 	if (FAILED(Load_Vector(stream))) {	/// Waves
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading VeinholeMonster\n");
 	if (!VeinholeMonsterClass::Load_All(stream)) {
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	DebugString("Loading RadarEvents\n");
 	if (!RadarEventClass::Load(stream)) {
+		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
@@ -1396,13 +1519,13 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	}
 
 	// The ring positions travel with every save, so a load continues where the save left off.
-	int campaign_slot = Autosave.Campaign_Slot();
-	int skirmish_slot = Autosave.Skirmish_Slot();
-	stream.Serialize(campaign_slot);
-	stream.Serialize(skirmish_slot);
-	if (stream.Is_Loading()) {
-		Autosave.Seed_Slots(campaign_slot, skirmish_slot);
-	}
+		int campaign_slot = Autosave.Campaign_Slot();
+		int skirmish_slot = Autosave.Skirmish_Slot();
+		stream.Serialize(campaign_slot);
+		stream.Serialize(skirmish_slot);
+		if (stream.Is_Loading()) {
+			Autosave.Seed_Slots(campaign_slot, skirmish_slot);
+		}
 }
 
 
