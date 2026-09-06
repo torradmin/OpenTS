@@ -86,6 +86,7 @@
 #include "_tooltip.h"
 #include "bench.h"
 #include "building.h"
+#include "builtype.h"
 #include "cctooltip.h"
 #include "conquer.h"
 #include "convert.h"
@@ -114,6 +115,7 @@
 #include "super.h"
 #include "suprtype.h"
 #include "surface.h"
+#include "techtype.h"
 #include "voc.h"
 #include "vox.h"
 
@@ -121,6 +123,7 @@
 #include "color.hh"
 
 #include <algorithm>
+#include <compare>
 
 ShapeSet const * SidebarClass::SidebarShape = NULL;
 ShapeSet const * SidebarClass::SidebarMiddleShape = NULL;
@@ -168,37 +171,139 @@ ShapeSet const * SidebarClass::StripClass::DarkenShapes;
 void Print_Cameo_Text(char const * string, Point2D const & point, Rect const & cliprect, int maxlinelen);
 
 
+enum CameoCategoryType {
+	CAMEO_CATEGORY_SUPERWEAPON,
+	CAMEO_CATEGORY_INFANTRY,
+	CAMEO_CATEGORY_AIRCRAFT,
+	CAMEO_CATEGORY_UNIT,
+	CAMEO_CATEGORY_BUILDING,
+	CAMEO_CATEGORY_OTHER
+};
+
+enum CameoGroupType {
+	CAMEO_GROUP_NORMAL,
+	CAMEO_GROUP_WALL,
+	CAMEO_GROUP_GATE,
+	CAMEO_GROUP_DEFENSE
+};
+
 /*
- * Every sidebar gadget below is clicked on the screen but drawn onto the sidebar surface,
- * which is magnified onto the screen by the interface scale.
+ * The place a cameo takes on its strip. The members are compared in declaration order, so
+ * that order is the ordering rule the sidebar publishes.
+ */
+struct CameoOrderType {
+	int Category;
+	int SortOrder;
+	int Group;
+	int RulesIndex;
+	int Type;
+
+	auto operator<=>(CameoOrderType const &) const = default;
+};
+
+struct CameoSortType {
+	CameoOrderType Order;
+	SidebarClass::StripClass::BuildType Entry;
+};
+
+
+static CameoOrderType Cameo_Order(SidebarClass::StripClass::BuildType const & entry)
+{
+	CameoOrderType order;
+
+	order.Category = CAMEO_CATEGORY_OTHER;
+	order.SortOrder = 0;
+	order.Group = CAMEO_GROUP_NORMAL;
+	order.RulesIndex = entry.BuildableID;
+	order.Type = entry.BuildableType;
+
+	// A super weapon has no techno type, and a scenario trigger may name one the rules dropped.
+	if (entry.BuildableType == RTTI_SPECIAL) {
+		order.Category = CAMEO_CATEGORY_SUPERWEAPON;
+		if ((unsigned)entry.BuildableID < (unsigned)SuperWeaponTypes.Count()) {
+			order.SortOrder = SuperWeaponTypes[entry.BuildableID]->CameoSortOrder;
+		}
+		return(order);
+	}
+
+	switch (entry.BuildableType) {
+		case RTTI_INFANTRYTYPE:
+		case RTTI_INFANTRY:
+			order.Category = CAMEO_CATEGORY_INFANTRY;
+			break;
+
+		case RTTI_AIRCRAFTTYPE:
+		case RTTI_AIRCRAFT:
+			order.Category = CAMEO_CATEGORY_AIRCRAFT;
+			break;
+
+		case RTTI_UNITTYPE:
+		case RTTI_UNIT:
+			order.Category = CAMEO_CATEGORY_UNIT;
+			break;
+
+		case RTTI_BUILDINGTYPE:
+		case RTTI_BUILDING:
+			order.Category = CAMEO_CATEGORY_BUILDING;
+			break;
+
+		default:
+			break;
+	}
+
+	TechnoTypeClass const * tech = Fetch_Techno_Type(entry.BuildableType, entry.BuildableID);
+	if (tech == NULL) {
+		return(order);
+	}
+
+	order.SortOrder = tech->CameoSortOrder;
+
+	if (order.Category == CAMEO_CATEGORY_BUILDING) {
+		BuildingTypeClass const * building = (BuildingTypeClass const *)tech;
+
+		if (building->IsWall || building->IsFirestormWall || building->IsLaserFence || building->IsLaserFencePost) {
+			order.Group = CAMEO_GROUP_WALL;
+		} else if (building->IsGate) {
+			order.Group = CAMEO_GROUP_GATE;
+		} else if (building->IsSortCameoAsBaseDefense) {
+			order.Group = CAMEO_GROUP_DEFENSE;
+		}
+	}
+
+	return(order);
+}
+
+/*
+ * Every sidebar gadget below is clicked on the screen but drawn onto the
+ * sidebar surface, which is magnified onto the screen by the interface scale.
  */
 
 /// <summary>
 /// Places one of the sidebar's shape buttons.
 /// </summary>
 /// <param name="button">The button to place.</param>
-/// <param name="x">Where the button sits, in sidebar surface coordinates.</param>
-/// <param name="y">Where the button sits, in sidebar surface coordinates.</param>
-/// <param name="nudge">How far below that its shape is drawn.</param>
-/// <remarks>The position and size become the screen ones, because that is what the button is
-/// clicked against; the draw offsets carry its shape back into the surface's coordinates.
+/// <param name="x">Where the button sits, in sidebar surface
+/// coordinates.</param> <param name="y">Where the button sits, in sidebar
+/// surface coordinates.</param> <param name="nudge">How far below that its
+/// shape is drawn.</param> <remarks>The position and size become the screen
+/// ones, because that is what the button is clicked against; the draw offsets
+/// carry its shape back into the surface's coordinates.
 /// </remarks>
-static void Place_Sidebar_Button(ShapeButtonClass & button, int x, int y, int nudge = 0)
-{
-	int const scale = UI_Scale();
+static void Place_Sidebar_Button(ShapeButtonClass &button, int x, int y,
+                                 int nudge = 0) {
+  int const scale = UI_Scale();
 
-	button.Set_Position(SidebarRect.X + x * scale, y * scale);
-	button.DrawOffsetX = x - button.X;
-	button.DrawOffsetY = (y + nudge) - button.Y;
+  button.Set_Position(SidebarRect.X + x * scale, y * scale);
+  button.DrawOffsetX = x - button.X;
+  button.DrawOffsetY = (y + nudge) - button.Y;
 
-	ShapeSet const * shape = button.Get_Shape_Data();
-	if (shape != NULL) {
-		button.Set_Size(shape->Get_Width() * scale, shape->Get_Height() * scale);
-	}
+  ShapeSet const *shape = button.Get_Shape_Data();
+  if (shape != NULL) {
+    button.Set_Size(shape->Get_Width() * scale, shape->Get_Height() * scale);
+  }
 
-	button.Flag_To_Redraw();
+  button.Flag_To_Redraw();
 }
-
 
 /// <summary>
 /// Places one build cameo slot of a sidebar strip.
@@ -206,21 +311,21 @@ static void Place_Sidebar_Button(ShapeButtonClass & button, int x, int y, int nu
 /// <param name="slot">The cameo slot to place.</param>
 /// <param name="column">The strip the slot belongs to.</param>
 /// <param name="index">The slot's place down that strip.</param>
-/// <remarks>The slot is never drawn from, only clicked on, so it carries the screen rectangle
-/// alone.</remarks>
-static void Place_Cameo_Slot(SidebarClass::StripClass::SelectClass & slot, int column, int index)
-{
-	using Strip = SidebarClass::StripClass;
+/// <remarks>The slot is never drawn from, only clicked on, so it carries the
+/// screen rectangle alone.</remarks>
+static void Place_Cameo_Slot(SidebarClass::StripClass::SelectClass &slot,
+                             int column, int index) {
+  using Strip = SidebarClass::StripClass;
 
-	int const scale = UI_Scale();
-	int const x = Map.Column[column].X;
-	int const y = SidebarClass::SIDE_Y + Map.Column[column].Y + Strip::OBJECT_HEIGHT * index;
+  int const scale = UI_Scale();
+  int const x = Map.Column[column].X;
+  int const y = SidebarClass::SIDE_Y + Map.Column[column].Y +
+                Strip::OBJECT_HEIGHT * index;
 
-	slot.Set_Position(SidebarRect.X + x * scale, y * scale);
-	slot.Set_Size(Strip::OBJECT_WIDTH * scale, Strip::OBJECT_HEIGHT * scale);
-	slot.Flag_To_Redraw();
+  slot.Set_Position(SidebarRect.X + x * scale, y * scale);
+  slot.Set_Size(Strip::OBJECT_WIDTH * scale, Strip::OBJECT_HEIGHT * scale);
+  slot.Flag_To_Redraw();
 }
-
 
 /// <summary>
 /// Default constructor for the sidebar background gadget.
@@ -1232,6 +1337,7 @@ SidebarClass::StripClass::StripClass(InitClass const &) :
 	ObjectRect(RECT_NONE),
 	ID(0),
 	IsToRedraw(true),
+	IsToSort(true),
 	IsBuilding(false),
 	IsScrollingDown(false),
 	IsScrolling(false),
@@ -1312,6 +1418,7 @@ void SidebarClass::StripClass::Init_Clear(void)
 	IsScrollingDown = false;
 	IsScrolling = false;
 	IsBuilding = false;
+	IsToSort = true;
 	Flasher = -1;
 	TopIndex = 0;
 	Slid = 0;
@@ -1455,6 +1562,7 @@ bool SidebarClass::StripClass::Add(RTTIType type, int id)
 		Buildables[BuildableCount].BuildableID = id;
 		BuildableCount++;
 		IsToRedraw = true;
+		IsToSort = true;
 		return(true);
 	}
 	return(false);
@@ -1560,6 +1668,16 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 {
 	KeyNumType key = KeyNumType(input & ~KN_UNK);
 	bool redraw = false;
+
+	// Ordering waits out a slide so that the strip never moves under a scroll in progress.
+	if (IsToSort && !IsScrolling) {
+		if (Options.SidebarSorting) {
+			Sort();
+			redraw = true;
+		} else {
+			IsToSort = false;
+		}
+	}
 
 	/*
 	**	If this is scroll button for this side strip, then scroll the strip as
@@ -2107,6 +2225,63 @@ bool SidebarClass::StripClass::Recalc(void)
 }
 
 
+/// <summary>
+/// Puts this strip's entries into the order the sidebar specifies.
+/// A strip that has been scrolled keeps the cameo on its top row there. The order is a
+/// display concern only; membership and production are untouched.
+/// </summary>
+void SidebarClass::StripClass::Sort(void)
+{
+	IsToSort = false;
+
+	if (BuildableCount < 2) {
+		return;
+	}
+
+	BuildType const anchor = Buildables[std::max(0, std::min(TopIndex, BuildableCount - 1))];
+
+	CameoSortType sorted[MAX_BUILDABLES];
+	for (int index = 0; index < BuildableCount; index++) {
+		sorted[index].Order = Cameo_Order(Buildables[index]);
+		sorted[index].Entry = Buildables[index];
+	}
+
+	std::sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
+		return(left.Order < right.Order);
+	});
+
+	bool moved = false;
+	for (int index = 0; index < BuildableCount; index++) {
+		if (Buildables[index] != sorted[index].Entry) {
+			moved = true;
+		}
+		Buildables[index] = sorted[index].Entry;
+	}
+
+	if (!moved) {
+		return;
+	}
+
+	// A strip resting at its top stays there rather than following what was on that row.
+	if (TopIndex > 0) {
+		for (int index = 0; index < BuildableCount; index++) {
+			if (Buildables[index] == anchor) {
+				TopIndex = index;
+				break;
+			}
+		}
+	}
+	TopIndex = std::max(0, std::min(TopIndex, BuildableCount - Map.Max_Visible()));
+
+	// A tooltip on screen holds a copy of its text and outlives the cameo it describes.
+	if (ToolTips != NULL) {
+		ToolTips->Reset_Current();
+	}
+
+	Flag_To_Redraw();
+}
+
+
 /***********************************************************************************************
  * SidebarClass::StripClass::SelectClass::SelectClass -- Default constructor.                  *
  *                                                                                             *
@@ -2344,7 +2519,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						} else {
 							Speak(VOX_BUILDING);
 						}
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, Strip->Buildables[index].BuildableType, Strip->Buildables[index].BuildableID));
+						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
 					}
 
 				} else {
@@ -2377,7 +2552,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						produce = true;
 					}
 					if (produce) {
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, Strip->Buildables[index].BuildableType, Strip->Buildables[index].BuildableID));
+						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
 					}
 				}
 			}
@@ -2851,6 +3026,9 @@ void SidebarClass::StripClass::Serialize(SaveStreamClass & stream)
 	 * is, both established by the sidebar constructor and Init_IO for the current screen.
 	 *
 	 * not saved: IsToRedraw -- a redraw flag; the load asks for a complete draw anyway.
+	 *
+	 * not saved: IsToSort -- raised on load below, because the rules and the ordering setting
+	 * can both differ from the ones the game was saved under.
 	 */
 	stream.Serialize(IsBuilding);
 	stream.Serialize(IsScrollingDown);
@@ -2862,6 +3040,10 @@ void SidebarClass::StripClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LastSlid);
 	stream.Serialize(BuildableCount);
 	stream.Serialize(Buildables);
+
+	if (stream.Is_Loading()) {
+		IsToSort = true;
+	}
 
 	/*
 	 * not saved: LogoShapes, ClockShapes, RechargeClockShapes, DarkenShapes, UpButton,
